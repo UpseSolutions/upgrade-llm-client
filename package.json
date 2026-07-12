@@ -1,0 +1,29 @@
+{
+  "name": "@upgrade/llm-client",
+  "version": "0.1.0",
+  "description": "Wrapper fino sobre Anthropic/OpenAI/Groq com cascata de fallback e reporte de uso pro coletor central (Fase 1 do Gateway de LLM — Upgrade Soluções)",
+  "private": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.1",
+    "groq-sdk": "^0.7.0",
+    "openai": "^4.68.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.13",
+    "@types/node": "^20.16.10",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.2"
+  }
+}
