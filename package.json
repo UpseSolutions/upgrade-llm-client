@@ -9,6 +9,7 @@
     "dist"
   ],
   "scripts": {
+    "prepare": "tsc",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
