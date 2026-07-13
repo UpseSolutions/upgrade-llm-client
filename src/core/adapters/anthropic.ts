@@ -8,14 +8,17 @@ type UsageWithCache = Anthropic.Usage & { cache_read_input_tokens?: number | nul
 
 export async function completeAnthropic(params: CompleteParams): Promise<CompletionResult> {
   const client = new Anthropic({ apiKey: params.apiKey });
-  const response = await client.messages.create({
-    model: params.model,
-    max_tokens: params.maxTokens,
-    temperature: params.temperature,
-    system: params.system,
-    messages: params.messages.map((m) => ({ role: m.role, content: m.content })) as Anthropic.MessageParam[],
-    tools: params.tools as Anthropic.Tool[] | undefined,
-  });
+  const response = await client.messages.create(
+    {
+      model: params.model,
+      max_tokens: params.maxTokens,
+      temperature: params.temperature,
+      system: params.system,
+      messages: params.messages.map((m) => ({ role: m.role, content: m.content })) as Anthropic.MessageParam[],
+      tools: params.tools as Anthropic.Tool[] | undefined,
+    },
+    { signal: params.signal },
+  );
 
   const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
 
@@ -38,14 +41,17 @@ export async function* streamAnthropic(
   params: CompleteParams,
 ): AsyncGenerator<Anthropic.MessageStreamEvent, TokenUsage, void> {
   const client = new Anthropic({ apiKey: params.apiKey });
-  const stream = client.messages.stream({
-    model: params.model,
-    max_tokens: params.maxTokens,
-    temperature: params.temperature,
-    system: params.system,
-    messages: params.messages.map((m) => ({ role: m.role, content: m.content })) as Anthropic.MessageParam[],
-    tools: params.tools as Anthropic.Tool[] | undefined,
-  });
+  const stream = client.messages.stream(
+    {
+      model: params.model,
+      max_tokens: params.maxTokens,
+      temperature: params.temperature,
+      system: params.system,
+      messages: params.messages.map((m) => ({ role: m.role, content: m.content })) as Anthropic.MessageParam[],
+      tools: params.tools as Anthropic.Tool[] | undefined,
+    },
+    { signal: params.signal },
+  );
 
   let usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
 

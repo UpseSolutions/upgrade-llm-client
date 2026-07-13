@@ -15,7 +15,7 @@ async function completeAnthropic(params) {
         system: params.system,
         messages: params.messages.map((m) => ({ role: m.role, content: m.content })),
         tools: params.tools,
-    });
+    }, { signal: params.signal });
     const textBlock = response.content.find((b) => b.type === 'text');
     return {
         text: textBlock?.text ?? '',
@@ -36,7 +36,7 @@ async function* streamAnthropic(params) {
         system: params.system,
         messages: params.messages.map((m) => ({ role: m.role, content: m.content })),
         tools: params.tools,
-    });
+    }, { signal: params.signal });
     let usage = { inputTokens: 0, outputTokens: 0 };
     for await (const event of stream) {
         if (event.type === 'message_start') {

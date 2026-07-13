@@ -14,6 +14,7 @@ export interface CompleteParams {
     temperature?: number;
     tools?: unknown[];
     feature: string;
+    signal?: AbortSignal;
 }
 export interface TokenUsage {
     inputTokens: number;

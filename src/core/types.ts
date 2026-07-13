@@ -33,6 +33,11 @@ export interface CompleteParams {
   // "kit_generation") — não é opcional porque visibilidade de custo é o
   // propósito central da lib.
   feature: string;
+  // Repassado direto pro SDK do provedor (mesmo padrão de `tools` — sem
+  // reimplementar nada). Sem isso um caller que hoje usa AbortController
+  // com timeout próprio (padrão comum antes de existir a lib) perderia
+  // esse comportamento na migração.
+  signal?: AbortSignal;
 }
 
 export interface TokenUsage {

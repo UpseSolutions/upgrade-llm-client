@@ -24,13 +24,16 @@ export async function completeOpenAICompatible(
   params: CompleteParams,
 ): Promise<CompletionResult> {
   const client = getClient(provider, params.apiKey);
-  const response = await client.chat.completions.create({
-    model: params.model,
-    max_tokens: params.maxTokens,
-    temperature: params.temperature,
-    messages: buildMessages(params) as never,
-    tools: params.tools as never,
-  });
+  const response = await client.chat.completions.create(
+    {
+      model: params.model,
+      max_tokens: params.maxTokens,
+      temperature: params.temperature,
+      messages: buildMessages(params) as never,
+      tools: params.tools as never,
+    },
+    { signal: params.signal },
+  );
 
   const usage: TokenUsage = {
     inputTokens: response.usage?.prompt_tokens ?? 0,
@@ -55,15 +58,18 @@ export async function* streamOpenAICompatible(
   params: CompleteParams,
 ): AsyncGenerator<OpenAI.ChatCompletionChunk, TokenUsage, void> {
   const client = getClient(provider, params.apiKey);
-  const stream = await client.chat.completions.create({
-    model: params.model,
-    max_tokens: params.maxTokens,
-    temperature: params.temperature,
-    messages: buildMessages(params) as never,
-    tools: params.tools as never,
-    stream: true,
-    stream_options: { include_usage: true },
-  });
+  const stream = await client.chat.completions.create(
+    {
+      model: params.model,
+      max_tokens: params.maxTokens,
+      temperature: params.temperature,
+      messages: buildMessages(params) as never,
+      tools: params.tools as never,
+      stream: true,
+      stream_options: { include_usage: true },
+    },
+    { signal: params.signal },
+  );
 
   let usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
 

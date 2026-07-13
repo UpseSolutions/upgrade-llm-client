@@ -26,7 +26,7 @@ async function completeOpenAICompatible(provider, params) {
         temperature: params.temperature,
         messages: buildMessages(params),
         tools: params.tools,
-    });
+    }, { signal: params.signal });
     const usage = {
         inputTokens: response.usage?.prompt_tokens ?? 0,
         outputTokens: response.usage?.completion_tokens ?? 0,
@@ -49,7 +49,7 @@ async function* streamOpenAICompatible(provider, params) {
         tools: params.tools,
         stream: true,
         stream_options: { include_usage: true },
-    });
+    }, { signal: params.signal });
     let usage = { inputTokens: 0, outputTokens: 0 };
     for await (const chunk of stream) {
         if (chunk.usage) {
