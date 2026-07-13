@@ -1,14 +1,18 @@
 import { LLMClient } from '../client';
 import * as completeModule from '../core/complete';
-import { TokenUsage } from '../core/types';
+import { TokenUsage, StreamCompletionResult } from '../core/types';
 
 jest.mock('../core/complete');
 const mockCompleteStream = completeModule.completeStream as jest.MockedFunction<typeof completeModule.completeStream>;
 const mockComplete = completeModule.complete as jest.MockedFunction<typeof completeModule.complete>;
 
-async function* fakeStream(chunks: unknown[], finalUsage: TokenUsage): AsyncGenerator<unknown, TokenUsage, void> {
+async function* fakeStream(
+  chunks: unknown[],
+  finalUsage: TokenUsage,
+  raw: unknown = undefined,
+): AsyncGenerator<unknown, StreamCompletionResult, void> {
   for (const chunk of chunks) yield chunk;
-  return finalUsage;
+  return { usage: finalUsage, raw };
 }
 
 describe('LLMClient.completeStream (passthrough)', () => {
@@ -55,8 +59,26 @@ describe('LLMClient.completeStream (passthrough)', () => {
     expect(body).toMatchObject({ tokensIn: 100, tokensOut: 50, streaming: true, success: true, feature: 'sdr_chat' });
   });
 
+  it('chama onFinalMessage com a mensagem reconstruída pelo SDK ao fim do stream', async () => {
+    const finalMessage = { role: 'assistant', stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'x' }] };
+    mockCompleteStream.mockReturnValue(fakeStream([{ delta: 'x' }], { inputTokens: 10, outputTokens: 5 }, finalMessage));
+
+    const client = new LLMClient({ product: 'CONTENTSELLER' });
+    const received: unknown[] = [];
+
+    for await (const chunk of client.completeStream({
+      provider: 'anthropic', apiKey: 'k', model: 'claude-sonnet-5',
+      messages: [{ role: 'user', content: 'oi' }], maxTokens: 100, feature: 'sdr_chat',
+      onFinalMessage: (raw) => received.push(raw),
+    })) {
+      // só consumindo o stream
+    }
+
+    expect(received).toEqual([finalMessage]);
+  });
+
   it('erro no meio do stream ainda propaga pro consumidor e reporta success=false', async () => {
-    async function* failingStream(): AsyncGenerator<unknown, TokenUsage, void> {
+    async function* failingStream(): AsyncGenerator<unknown, StreamCompletionResult, void> {
       yield { delta: 'parcial' };
       throw new Error('conexão caiu no meio');
     }

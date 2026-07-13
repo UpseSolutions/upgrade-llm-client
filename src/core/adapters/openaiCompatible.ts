@@ -49,6 +49,13 @@ export async function completeOpenAICompatible(
   };
 }
 
+export interface OpenAIStreamResult {
+  usage: TokenUsage;
+  // Sem equivalente a stream.finalMessage() da Anthropic no SDK da OpenAI
+  // — não reimplementado aqui (ver StreamResult do adapter Anthropic).
+  raw: undefined;
+}
+
 // Passthrough de streaming — só funciona pra OpenAI de verdade (Groq não
 // devolve `usage` no stream mesmo com stream_options.include_usage; nesse
 // caso o reporter grava tokens=0 e quem chama ainda recebe o stream
@@ -56,7 +63,7 @@ export async function completeOpenAICompatible(
 export async function* streamOpenAICompatible(
   provider: Extract<Provider, 'openai' | 'groq'>,
   params: CompleteParams,
-): AsyncGenerator<OpenAI.ChatCompletionChunk, TokenUsage, void> {
+): AsyncGenerator<OpenAI.ChatCompletionChunk, OpenAIStreamResult, void> {
   const client = getClient(provider, params.apiKey);
   const stream = await client.chat.completions.create(
     {
@@ -83,5 +90,5 @@ export async function* streamOpenAICompatible(
     yield chunk;
   }
 
-  return usage;
+  return { usage, raw: undefined };
 }

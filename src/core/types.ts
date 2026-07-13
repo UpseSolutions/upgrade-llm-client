@@ -38,6 +38,13 @@ export interface CompleteParams {
   // com timeout próprio (padrão comum antes de existir a lib) perderia
   // esse comportamento na migração.
   signal?: AbortSignal;
+  // Só usado por completeStream — chamado quando o stream termina, com a
+  // mensagem final reconstruída pelo SDK (stream.finalMessage() da
+  // Anthropic; undefined pra OpenAI/Groq, sem equivalente nativo).
+  // Necessário pra loop agêntico com tools durante streaming: sem os
+  // content blocks completos, quem chama não sabe se deve continuar
+  // (stop_reason) nem consegue montar o próximo turno da conversa.
+  onFinalMessage?: (raw: unknown) => void;
 }
 
 export interface TokenUsage {
@@ -52,5 +59,12 @@ export interface CompletionResult {
   // Resposta nativa completa do SDK do provedor — quem chama acessa
   // tool_use blocks, stop_reason etc a partir daqui quando precisar de mais
   // que o texto.
+  raw: unknown;
+}
+
+// Valor de retorno (`return`) do generator de completeStream — usage pro
+// reporter, raw pro onFinalMessage (ver CompleteParams.onFinalMessage).
+export interface StreamCompletionResult {
+  usage: TokenUsage;
   raw: unknown;
 }

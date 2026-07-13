@@ -54,7 +54,8 @@ class LLMClient {
                 yield next.value;
                 next = await gen.next();
             }
-            usage = next.value;
+            usage = next.value.usage;
+            params.onFinalMessage?.(next.value.raw);
             (0, reporter_1.reportUsage)(this.reporterConfig, {
                 feature: params.feature,
                 provider: params.provider,

@@ -60,6 +60,6 @@ async function* streamOpenAICompatible(provider, params) {
         }
         yield chunk;
     }
-    return usage;
+    return { usage, raw: undefined };
 }
 //# sourceMappingURL=openaiCompatible.js.map

@@ -48,6 +48,7 @@ async function* streamAnthropic(params) {
         }
         yield event;
     }
-    return usage;
+    const finalMessage = await stream.finalMessage();
+    return { usage, raw: finalMessage };
 }
 //# sourceMappingURL=anthropic.js.map

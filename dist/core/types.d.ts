@@ -15,6 +15,7 @@ export interface CompleteParams {
     tools?: unknown[];
     feature: string;
     signal?: AbortSignal;
+    onFinalMessage?: (raw: unknown) => void;
 }
 export interface TokenUsage {
     inputTokens: number;
@@ -23,6 +24,10 @@ export interface TokenUsage {
 }
 export interface CompletionResult {
     text: string;
+    usage: TokenUsage;
+    raw: unknown;
+}
+export interface StreamCompletionResult {
     usage: TokenUsage;
     raw: unknown;
 }

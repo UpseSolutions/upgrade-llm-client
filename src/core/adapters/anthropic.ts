@@ -33,13 +33,25 @@ export async function completeAnthropic(params: CompleteParams): Promise<Complet
   };
 }
 
+export interface StreamResult {
+  usage: TokenUsage;
+  // Mensagem final reconstruída pelo próprio SDK da Anthropic
+  // (stream.finalMessage() — não é a lib reimplementando acúmulo de
+  // deltas). Necessário pra loop agêntico com tools durante streaming:
+  // sem os content blocks completos (incl. tool_use), quem chama não
+  // consegue montar o próximo turno da conversa nem saber se deve
+  // continuar (stop_reason). undefined pra OpenAI/Groq — sem equivalente
+  // nativo, não reimplementado aqui pelos mesmos motivos.
+  raw: Anthropic.Message;
+}
+
 // Passthrough — não reimplementa o streaming da Anthropic. Repassa cada
 // evento nativo intacto e só observa o evento final (message_delta com
 // usage cumulativo) pra extrair os tokens, sem alterar nada do que o
 // consumidor recebe.
 export async function* streamAnthropic(
   params: CompleteParams,
-): AsyncGenerator<Anthropic.MessageStreamEvent, TokenUsage, void> {
+): AsyncGenerator<Anthropic.MessageStreamEvent, StreamResult, void> {
   const client = new Anthropic({ apiKey: params.apiKey });
   const stream = client.messages.stream(
     {
@@ -66,5 +78,6 @@ export async function* streamAnthropic(
     yield event;
   }
 
-  return usage;
+  const finalMessage = await stream.finalMessage();
+  return { usage, raw: finalMessage };
 }
