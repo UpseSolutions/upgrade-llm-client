@@ -8,8 +8,13 @@ import { CompleteParams, CompletionResult, Provider, TokenUsage } from '../types
 // de fato mesmo sem compartilhar código entre os dois clients). O cast pro
 // tipo OpenAI é seguro em runtime (mesma forma estrutural), só existe
 // porque TS não resolve overloads de um union OpenAI | Groq.
+// fetch nativo forçado pelo mesmo motivo do adapter Anthropic (ver
+// newAnthropicClient) — consistência entre os três provedores.
 function getClient(provider: 'openai' | 'groq', apiKey: string): OpenAI {
-  return provider === 'openai' ? new OpenAI({ apiKey }) : (new Groq({ apiKey }) as unknown as OpenAI);
+  const fetchOpt = { fetch: globalThis.fetch as any };
+  return provider === 'openai'
+    ? new OpenAI({ apiKey, ...fetchOpt })
+    : (new Groq({ apiKey, ...fetchOpt }) as unknown as OpenAI);
 }
 
 function buildMessages(params: CompleteParams) {

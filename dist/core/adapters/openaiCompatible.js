@@ -8,7 +8,10 @@ exports.streamOpenAICompatible = streamOpenAICompatible;
 const openai_1 = __importDefault(require("openai"));
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
 function getClient(provider, apiKey) {
-    return provider === 'openai' ? new openai_1.default({ apiKey }) : new groq_sdk_1.default({ apiKey });
+    const fetchOpt = { fetch: globalThis.fetch };
+    return provider === 'openai'
+        ? new openai_1.default({ apiKey, ...fetchOpt })
+        : new groq_sdk_1.default({ apiKey, ...fetchOpt });
 }
 function buildMessages(params) {
     const messages = [];

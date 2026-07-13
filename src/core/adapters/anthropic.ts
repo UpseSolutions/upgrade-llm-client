@@ -1,13 +1,23 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { CompleteParams, CompletionResult, TokenUsage } from '../types';
 
+// Força fetch nativo do Node (18+) — achado real num consumidor da lib
+// (ContentSeller, agente Seller/SDR): o SDK sem essa opção pode cair no
+// node-fetch@2.x vendorizado, que solta "Premature close" em streams
+// longos (loop agêntico de várias rodadas). Sem contrapartida conhecida,
+// vira padrão da lib em vez de opção — mesma correção que o ContentSeller
+// já aplicava manualmente antes de existir a lib.
+function newAnthropicClient(apiKey: string): Anthropic {
+  return new Anthropic({ apiKey, fetch: globalThis.fetch as any });
+}
+
 // A resposta real da API inclui cache_read_input_tokens (prompt caching),
 // mas os tipos estáveis desta versão do SDK ainda não expõem o campo — só
 // a superfície beta expõe. Runtime tem o campo, só o tipo não.
 type UsageWithCache = Anthropic.Usage & { cache_read_input_tokens?: number | null };
 
 export async function completeAnthropic(params: CompleteParams): Promise<CompletionResult> {
-  const client = new Anthropic({ apiKey: params.apiKey });
+  const client = newAnthropicClient(params.apiKey);
   const response = await client.messages.create(
     {
       model: params.model,
@@ -52,7 +62,7 @@ export interface StreamResult {
 export async function* streamAnthropic(
   params: CompleteParams,
 ): AsyncGenerator<Anthropic.MessageStreamEvent, StreamResult, void> {
-  const client = new Anthropic({ apiKey: params.apiKey });
+  const client = newAnthropicClient(params.apiKey);
   const stream = client.messages.stream(
     {
       model: params.model,

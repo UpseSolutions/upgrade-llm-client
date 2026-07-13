@@ -6,8 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.completeAnthropic = completeAnthropic;
 exports.streamAnthropic = streamAnthropic;
 const sdk_1 = __importDefault(require("@anthropic-ai/sdk"));
+function newAnthropicClient(apiKey) {
+    return new sdk_1.default({ apiKey, fetch: globalThis.fetch });
+}
 async function completeAnthropic(params) {
-    const client = new sdk_1.default({ apiKey: params.apiKey });
+    const client = newAnthropicClient(params.apiKey);
     const response = await client.messages.create({
         model: params.model,
         max_tokens: params.maxTokens,
@@ -28,7 +31,7 @@ async function completeAnthropic(params) {
     };
 }
 async function* streamAnthropic(params) {
-    const client = new sdk_1.default({ apiKey: params.apiKey });
+    const client = newAnthropicClient(params.apiKey);
     const stream = client.messages.stream({
         model: params.model,
         max_tokens: params.maxTokens,
