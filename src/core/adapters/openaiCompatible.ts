@@ -13,7 +13,7 @@ function getClient(provider: 'openai' | 'groq', apiKey: string): OpenAI {
 }
 
 function buildMessages(params: CompleteParams) {
-  const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [];
+  const messages: { role: 'system' | 'user' | 'assistant'; content: string | unknown[] }[] = [];
   if (params.system) messages.push({ role: 'system', content: params.system });
   for (const m of params.messages) messages.push({ role: m.role, content: m.content });
   return messages;

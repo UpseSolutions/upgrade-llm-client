@@ -13,7 +13,7 @@ export async function completeAnthropic(params: CompleteParams): Promise<Complet
     max_tokens: params.maxTokens,
     temperature: params.temperature,
     system: params.system,
-    messages: params.messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: params.messages.map((m) => ({ role: m.role, content: m.content })) as Anthropic.MessageParam[],
     tools: params.tools as Anthropic.Tool[] | undefined,
   });
 
@@ -43,7 +43,7 @@ export async function* streamAnthropic(
     max_tokens: params.maxTokens,
     temperature: params.temperature,
     system: params.system,
-    messages: params.messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: params.messages.map((m) => ({ role: m.role, content: m.content })) as Anthropic.MessageParam[],
     tools: params.tools as Anthropic.Tool[] | undefined,
   });
 

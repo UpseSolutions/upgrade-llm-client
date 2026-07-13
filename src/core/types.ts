@@ -10,7 +10,11 @@ export type Product =
 
 export interface LLMMessage {
   role: 'user' | 'assistant';
-  content: string;
+  // string cobre o caso simples. Loop agêntico (tool_use/tool_result) e
+  // visão (image blocks) precisam de blocos de conteúdo nativos do
+  // provedor — a lib não traduz esse formato entre provedores (mesmo
+  // motivo de `tools` ser unknown), então aceita o array nativo como veio.
+  content: string | unknown[];
 }
 
 export interface CompleteParams {
