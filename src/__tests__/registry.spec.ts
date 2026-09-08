@@ -29,6 +29,10 @@ describe('resolveRole', () => {
       expect(passo.providerSpec.baseUrl).toBeUndefined();
     }
     expect(resolveRole('classificacao')[1].providerSpec.sdk).toBe('groq');
+    // E o id do modelo carrega o prefixo `openai/`, que faz parte do id NO
+    // Groq — sem ele a busca de preço não casa e a conferência de catálogo
+    // acusa o modelo como sumido.
+    expect(resolveRole('classificacao')[1].model).toBe('openai/gpt-oss-20b');
   });
 
   it('aplica o override do produto quando existe', () => {
@@ -83,7 +87,10 @@ describe('motor medido', () => {
 
   it('mas continua no catálogo, porque gera custo', () => {
     const gemini = modelCatalog().find((m) => m.model === 'gemini-2.0-flash');
-    expect(gemini).toEqual({ model: 'gemini-2.0-flash', provider: 'google', measuredEngine: true });
+    // O provedor é `gemini` e não `google`: a busca de preço casa com o que o
+    // produto REPORTA (report_usage(..., "gemini", ...) no hadrians), não com o
+    // nome do fornecedor. Com `google` aqui, o preço nunca seria encontrado.
+    expect(gemini).toEqual({ model: 'gemini-2.0-flash', provider: 'gemini', measuredEngine: true });
   });
 });
 
@@ -251,7 +258,7 @@ describe('providerSpecDe (compatibilidade)', () => {
   });
 
   it('provedor do catálogo que o cliente não fala é recusado com a razão', () => {
-    expect(() => providerSpecDe({ provider: 'google', providerSpec: providerSpecOf('google') }))
+    expect(() => providerSpecDe({ provider: 'gemini', providerSpec: providerSpecOf('gemini') }))
       .toThrow(/não fala com ele/);
   });
 });
