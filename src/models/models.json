@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "updatedAt": "2026-09-08",
   "_leiaMe": [
     "Registro central de modelos do portfólio Upgrade Soluções.",
@@ -80,16 +80,6 @@
         "stream_options.include_usage — nessa chamada o custo fica sem visibilidade."
       ]
     },
-    "google": {
-      "envKey": "GEMINI_API_KEY",
-      "verified": true,
-      "note": [
-        "SEM `api` de propósito: este cliente não fala com o Google. Existe aqui",
-        "porque o catálogo também alimenta preço, e gemini-2.0-flash roda em",
-        "produção no hadrians (chamado por httpx direto, em Python).",
-        "resolveRole recusa qualquer papel que aponte para cá."
-      ]
-    },
     "deepseek": {
       "api": "openai-compatible",
       "baseUrl": "https://api.deepseek.com/v1",
@@ -137,12 +127,36 @@
         "vez de uma por provedor): o OpenRouter já É um gateway OpenAI-compatível.",
         "Antes de adotar, confirmar catálogo, preço e margem na documentação deles."
       ]
+    },
+    "gemini": {
+      "envKey": "GEMINI_API_KEY",
+      "verified": true,
+      "note": [
+        "Id `gemini` e não `google` porque é o que o Hadrians REPORTA:",
+        "`report_usage(\"ai_visibility\", \"gemini\", model, ...)` em",
+        "ai_visibility_collector.py. A busca de preço casa pelo que chega, não pelo",
+        "nome do fornecedor — com `google` aqui, o preço nunca seria encontrado.",
+        "",
+        "SEM `api`: este cliente não fala com o Google. Existe no catálogo porque o",
+        "consumo gera custo e precisa de preço."
+      ]
     }
   },
   "models": {
     "claude-sonnet-5": {
       "provider": "anthropic",
-      "note": "Padrão de conversa e redação em quase todo o portfólio."
+      "note": "Padrão de conversa e redação em quase todo o portfólio.",
+      "price": {
+        "inputPerMTok": 3,
+        "outputPerMTok": 15,
+        "cachedPerMTok": 0.3,
+        "intro": {
+          "until": "2026-09-01T00:00:00.000Z",
+          "inputPerMTok": 2,
+          "outputPerMTok": 10,
+          "cachedPerMTok": 0.2
+        }
+      }
     },
     "claude-opus-5": {
       "provider": "anthropic",
@@ -156,31 +170,48 @@
         "coletor tem opus-5, 4-8, 4-7 e 4-6 — o comentário de lá diz que as gerações",
         "anteriores estão presentes justamente \"para que uma troca de modelo num",
         "produto não vire custo zero silencioso\" — e a 4-5 tinha escapado."
-      ]
+      ],
+      "price": {
+        "inputPerMTok": 5,
+        "outputPerMTok": 25,
+        "cachedPerMTok": 0.5
+      }
     },
     "claude-sonnet-4-6": {
       "provider": "anthropic",
-      "note": "Só emailseller. Ver divergences.emailsellerAtrasado."
+      "note": "Só emailseller. Ver divergences.emailsellerAtrasado.",
+      "price": {
+        "inputPerMTok": 3,
+        "outputPerMTok": 15,
+        "cachedPerMTok": 0.3
+      }
     },
     "claude-haiku-4-5-20251001": {
       "provider": "anthropic",
-      "note": "ID com data. hadrians e alfabetia usam esta forma; ver divergences.haikuComData."
+      "note": "ID com data. hadrians e alfabetia usam esta forma; ver divergences.haikuComData.",
+      "price": {
+        "inputPerMTok": 1,
+        "outputPerMTok": 5,
+        "cachedPerMTok": 0.1
+      }
     },
     "gpt-4o": {
       "provider": "openai",
-      "note": "Conversa com lead no agenteup; visão no alfabetia."
+      "note": "Conversa com lead no agenteup; visão no alfabetia.",
+      "price": {
+        "inputPerMTok": 2.5,
+        "outputPerMTok": 10,
+        "cachedPerMTok": 1.25
+      }
     },
     "gpt-4o-mini": {
       "provider": "openai",
-      "note": "Classificação e triagem de alto volume."
-    },
-    "gpt-oss-20b": {
-      "provider": "groq",
-      "note": "Apache-2.0 na Groq. Classificação barata em contentseller e vanguardai."
-    },
-    "gpt-oss-120b": {
-      "provider": "groq",
-      "note": "Irmão maior do 20b, mesma licença."
+      "note": "Classificação e triagem de alto volume.",
+      "price": {
+        "inputPerMTok": 0.15,
+        "outputPerMTok": 0.6,
+        "cachedPerMTok": 0.075
+      }
     },
     "text-embedding-3-small": {
       "provider": "openai",
@@ -195,18 +226,50 @@
       "note": "Geração de imagem em contentseller e alfabetia."
     },
     "gemini-2.0-flash": {
-      "provider": "google",
+      "provider": "gemini",
       "measuredEngine": true,
       "note": [
-        "MOTOR MEDIDO, não ferramenta. hadrians consulta o Gemini para saber o que",
-        "o Gemini responde sobre a marca do cliente. Trocar por um modelo mais novo",
-        "muda a linha de base da medição.",
+        "DESLIGADO PELO PROVEDOR. Em 08/09/2026 a documentação do Google lista este",
+        "modelo em \"Previous models\", marcado como (Shut down); ele saiu também da",
+        "página de preços. As chamadas do Hadrians a ele estão falhando.",
         "",
-        "O cliente TypeScript não fala com o Google (Provider = anthropic|openai|groq),",
-        "então este modelo é inalcançável por resolveRole de propósito. Está aqui",
-        "porque o catálogo também alimenta preço — e hoje o pricing.ts do coletor NÃO",
-        "conhece gemini-2.0-flash, ou seja, esse gasto não está sendo precificado."
+        "A falha é silenciosa por construção: ai_visibility_collector.py captura a",
+        "exceção, loga um warning e reporta success=false. Ou seja, o produto de",
+        "visibilidade simplesmente não tem dado do Gemini, e ninguém viu — o sinal",
+        "existia (a contagem de falhas no coletor), faltava alguém olhar.",
+        "",
+        "SEM preço, de propósito: precificar um modelo desligado seria ficção. E a",
+        "substituição não é troca de ferramenta — é MOTOR MEDIDO. Trocar por um",
+        "Gemini 2.5 ou 3.x muda a linha de base da medição e torna os snapshots",
+        "antigos incomparáveis. A diferença é que hoje não há medição nenhuma, o que",
+        "é pior que uma quebra de série."
       ]
+    },
+    "openai/gpt-oss-20b": {
+      "provider": "groq",
+      "price": {
+        "inputPerMTok": 0.075,
+        "outputPerMTok": 0.3,
+        "cachedPerMTok": 0.0375
+      },
+      "note": [
+        "O prefixo `openai/` faz parte do id do modelo no Groq — o provedor",
+        "reportado continua sendo `groq`. Sem ele, a busca de preço não casa e a",
+        "conferência de catálogo acusa o modelo como sumido.",
+        "",
+        "Escolhido contra o 120b por medição em produção, 16 nichos reais: os dois",
+        "acertaram 16/16 em JSON válido, e este custa metade e responde mais rápido",
+        "(mediana 370ms contra 491ms)."
+      ]
+    },
+    "openai/gpt-oss-120b": {
+      "provider": "groq",
+      "price": {
+        "inputPerMTok": 0.15,
+        "outputPerMTok": 0.6,
+        "cachedPerMTok": 0.075
+      },
+      "note": "Irmão maior do 20b, mesma licença Apache-2.0 e mesmo detalhe do prefixo."
     }
   },
   "roles": {
@@ -235,7 +298,7 @@
       "description": "Triagem, extração de campo, rotulagem. Alto volume, barato.",
       "cascade": [
         "gpt-4o-mini",
-        "gpt-oss-20b"
+        "openai/gpt-oss-20b"
       ]
     },
     "visao": {
@@ -318,9 +381,38 @@
       "risco": "Baixo, mas as duas formas convivendo fazem o mesmo modelo aparecer como dois no relatório de custo."
     },
     "geminiSemPreco": {
-      "onde": "hadrians: ai_visibility_collector.py, brand_xray_service.py",
-      "o_que": "gemini-2.0-flash é chamado em produção e NÃO existe no pricing.ts do coletor.",
-      "risco": "Alto para a conta: esse consumo não aparece em lugar nenhum do custo. É motor medido, então não se troca — o que falta é preço, não substituição."
+      "onde": "hadrians: ai_visibility_collector.py:168, brand_xray_service.py:141",
+      "o_que": "gemini-2.0-flash foi DESLIGADO pelo Google (documentação de 08/09/2026: \"Previous models — Shut down\"). As chamadas estão falhando, e falhando em silêncio: o código captura a exceção, loga um warning e reporta success=false.",
+      "risco": "Alto, e não é o preço: o produto de visibilidade de IA está sem dado do Gemini há um tempo indeterminado, e o cliente não sabe. A substituição é decisão de MOTOR MEDIDO — muda a linha de base —, mas hoje não há linha de base: não há medição."
+    },
+    "precoDeUnidadeNaoToken": {
+      "onde": "whisper-1 (alfabetia), dall-e-3 (contentseller e alfabetia)",
+      "o_que": "Não são cobrados por token — é por minuto de áudio e por imagem —, e a forma de preço do registro só sabe expressar USD por milhão de tokens.",
+      "risco": "Médio. Esse consumo nunca entra na conta, e inventar um número por token seria pior que a ausência, porque pareceria certo."
     }
-  }
+  },
+  "_sobrePrecos": [
+    "O preço mora AQUI, junto do modelo, e não só na tabela do coletor.",
+    "",
+    "Os três buracos de preço que já apareceram — gemini-2.0-flash, claude-sonnet-4-6,",
+    "claude-opus-4-5 — tiveram a mesma causa: acrescentar o modelo era editar um",
+    "repositório e precificá-lo era editar OUTRO. Duas mãos, dois deploys, e a segunda",
+    "metade sendo esquecida. Aqui é o mesmo ato.",
+    "",
+    "USD por 1.000.000 de tokens, a mesma unidade que os provedores publicam, para",
+    "dar para conferir olhando lado a lado.",
+    "",
+    "O pricing.ts do coletor consulta este preço PRIMEIRO e cai na tabela embutida",
+    "dele depois. A tabela embutida não sai: ela é a rede para o caso de o registro",
+    "estar vazio ou indisponível.",
+    "",
+    "ATENÇÃO ao id do provedor e do modelo: a busca de preço casa com o que o produto",
+    "REPORTA, não com o nome bonito. Ver as notas de `gemini` e de `openai/gpt-oss-20b`.",
+    "",
+    "whisper-1 e dall-e-3 ficam SEM preço de propósito: não são cobrados por token",
+    "(é por minuto de áudio e por imagem), e a forma acima não sabe expressar isso.",
+    "Inventar um número por token ali seria pior que a ausência, porque pareceria",
+    "certo. text-embedding-3-small é cobrado por token, mas o número não foi",
+    "conferido — fica sem preço até alguém confirmar na tabela da OpenAI."
+  ]
 }
