@@ -7,11 +7,11 @@ exports.completeOpenAICompatible = completeOpenAICompatible;
 exports.streamOpenAICompatible = streamOpenAICompatible;
 const openai_1 = __importDefault(require("openai"));
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
-function getClient(provider, apiKey) {
+function getClient(spec, apiKey) {
     const fetchOpt = { fetch: globalThis.fetch };
-    return provider === 'openai'
-        ? new openai_1.default({ apiKey, ...fetchOpt })
-        : new groq_sdk_1.default({ apiKey, ...fetchOpt });
+    if (spec.sdk === 'groq')
+        return new groq_sdk_1.default({ apiKey, ...fetchOpt });
+    return new openai_1.default({ apiKey, baseURL: spec.baseUrl, ...fetchOpt });
 }
 function buildMessages(params) {
     const messages = [];
@@ -21,8 +21,8 @@ function buildMessages(params) {
         messages.push({ role: m.role, content: m.content });
     return messages;
 }
-async function completeOpenAICompatible(provider, params) {
-    const client = getClient(provider, params.apiKey);
+async function completeOpenAICompatible(spec, params) {
+    const client = getClient(spec, params.apiKey);
     const response = await client.chat.completions.create({
         model: params.model,
         max_tokens: params.maxTokens,
@@ -42,8 +42,8 @@ async function completeOpenAICompatible(provider, params) {
         raw: response,
     };
 }
-async function* streamOpenAICompatible(provider, params) {
-    const client = getClient(provider, params.apiKey);
+async function* streamOpenAICompatible(spec, params) {
+    const client = getClient(spec, params.apiKey);
     const stream = await client.chat.completions.create({
         model: params.model,
         max_tokens: params.maxTokens,

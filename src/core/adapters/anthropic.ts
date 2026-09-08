@@ -7,8 +7,11 @@ import { CompleteParams, CompletionResult, TokenUsage } from '../types';
 // longos (loop agêntico de várias rodadas). Sem contrapartida conhecida,
 // vira padrão da lib em vez de opção — mesma correção que o ContentSeller
 // já aplicava manualmente antes de existir a lib.
-function newAnthropicClient(apiKey: string): Anthropic {
-  return new Anthropic({ apiKey, fetch: globalThis.fetch as any });
+// baseURL sai do spec quando existe. Não é hipótese: gateways e provedores que
+// implementam a Messages API da Anthropic (a Moonshot anunciou isso em 09/2026)
+// passam a ser alcançáveis sem tocar aqui de novo.
+function newAnthropicClient(apiKey: string, baseUrl?: string): Anthropic {
+  return new Anthropic({ apiKey, baseURL: baseUrl, fetch: globalThis.fetch as any });
 }
 
 // A resposta real da API inclui cache_read_input_tokens (prompt caching),
@@ -17,7 +20,7 @@ function newAnthropicClient(apiKey: string): Anthropic {
 type UsageWithCache = Anthropic.Usage & { cache_read_input_tokens?: number | null };
 
 export async function completeAnthropic(params: CompleteParams): Promise<CompletionResult> {
-  const client = newAnthropicClient(params.apiKey);
+  const client = newAnthropicClient(params.apiKey, params.providerSpec?.baseUrl);
   const response = await client.messages.create(
     {
       model: params.model,
@@ -62,7 +65,7 @@ export interface StreamResult {
 export async function* streamAnthropic(
   params: CompleteParams,
 ): AsyncGenerator<Anthropic.MessageStreamEvent, StreamResult, void> {
-  const client = newAnthropicClient(params.apiKey);
+  const client = newAnthropicClient(params.apiKey, params.providerSpec?.baseUrl);
   const stream = client.messages.stream(
     {
       model: params.model,

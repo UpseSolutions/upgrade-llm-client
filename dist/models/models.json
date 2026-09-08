@@ -1,0 +1,326 @@
+{
+    "version": 2,
+    "updatedAt": "2026-09-08",
+    "_leiaMe": [
+        "Registro central de modelos do portfólio Upgrade Soluções.",
+        "",
+        "Este arquivo é a FONTE DA VERDADE. Trocar um modelo é editar uma linha aqui —",
+        "não é sair caçando string em oito repositórios. Foi exatamente esse o problema",
+        "que o motivou: em 08/09/2026 o levantamento achou ~70 identificadores de modelo",
+        "cravados no código, o emailseller parado em claude-sonnet-4-6 enquanto todo o",
+        "resto já estava em sonnet-5, e um claude-opus-4-5 solto no contentseller que",
+        "ninguém sabia que existia.",
+        "",
+        "É JSON, e não TypeScript, porque hadrians e vanguardai são Python. Um registro",
+        "que só o TypeScript enxerga deixaria dois produtos de fora — que é a situação",
+        "de hoje.",
+        "",
+        "Regra ao editar: TODA divergência entre produtos precisa de `reason`. Se não há",
+        "razão que se escreva, é para usar o default. Sem essa regra o arquivo vira, em",
+        "seis meses, a mesma bagunça espalhada que ele veio arrumar — só que num lugar."
+    ],
+    "_sobreMotoresMedidos": [
+        "Há dois usos de modelo, e confundi-los quebra produto.",
+        "",
+        "ROLE: 'preciso de um modelo que faça X'. O modelo é ferramenta e é trocável —",
+        "é para isso que o registro existe.",
+        "",
+        "MEASURED ENGINE: 'consulto ESTE motor porque o cliente quer saber o que ELE",
+        "responde'. Em hadrians (ai_visibility_collector, brand_xray_service) o produto",
+        "pergunta a vários motores o que dizem sobre uma marca. Trocar gemini-2.0-flash",
+        "por algo mais novo ali não melhora nada: muda O QUE ESTÁ SENDO MEDIDO e torna",
+        "os snapshots históricos incomparáveis entre si.",
+        "",
+        "Motor medido entra no catálogo (precisa de preço) e NUNCA entra numa role.",
+        "Há teste travando isso."
+    ],
+    "_sobreProvedores": [
+        "Provedor é DADO, não código. Antes deste bloco, trocar de provedor era editar",
+        "um union fechado em TypeScript e o getClient do adapter — ou seja, trocar Kimi",
+        "por DeepSeek era mudança de código em oito repos.",
+        "",
+        "Quase todo mundo fala a API da OpenAI: DeepSeek, Moonshot, Together, Fireworks",
+        "e OpenRouter mudam a URL e mais nada. Por isso `baseUrl` aqui é o campo que faz",
+        "um provedor novo funcionar sem tocar em código.",
+        "",
+        "`envKey` é o NOME da variável de ambiente, nunca o valor. A lib continua sem ler",
+        "env var sozinha — o nome serve para o produto saber qual chave falta antes de",
+        "subir, em vez de descobrir na primeira chamada em produção.",
+        "",
+        "`verified: false` significa que a baseUrl foi escrita de memória e NÃO foi",
+        "confirmada contra a documentação do provedor. Nenhum papel pode apontar para um",
+        "provedor não verificado — há teste travando. O precedente é o models.yaml do",
+        "VanguardAI, que registra a data de cada conferência ao vivo justamente porque",
+        "catálogo e URL de provedor mudam sem aviso."
+    ],
+    "providers": {
+        "anthropic": {
+            "api": "anthropic",
+            "envKey": "ANTHROPIC_API_KEY",
+            "verified": true,
+            "note": "Nativo desde antes do registro. URL padrão do SDK."
+        },
+        "openai": {
+            "api": "openai-compatible",
+            "envKey": "OPENAI_API_KEY",
+            "verified": true,
+            "note": "Nativo. URL padrão do SDK."
+        },
+        "groq": {
+            "api": "openai-compatible",
+            "sdk": "groq",
+            "envKey": "GROQ_API_KEY",
+            "verified": true,
+            "note": [
+                "Usa o groq-sdk, não OpenAI+baseUrl. É exceção deliberada: roda assim em",
+                "produção nos quatro produtos desde antes do registro, e trocar seria",
+                "equivalente no papel e risco sem ganho. O registro descreve o que É.",
+                "",
+                "Quirk conhecido: o Groq não devolve `usage` no stream nem com",
+                "stream_options.include_usage — nessa chamada o custo fica sem visibilidade."
+            ]
+        },
+        "google": {
+            "envKey": "GEMINI_API_KEY",
+            "verified": true,
+            "note": [
+                "SEM `api` de propósito: este cliente não fala com o Google. Existe aqui",
+                "porque o catálogo também alimenta preço, e gemini-2.0-flash roda em",
+                "produção no hadrians (chamado por httpx direto, em Python).",
+                "resolveRole recusa qualquer papel que aponte para cá."
+            ]
+        },
+        "deepseek": {
+            "api": "openai-compatible",
+            "baseUrl": "https://api.deepseek.com/v1",
+            "envKey": "DEEPSEEK_API_KEY",
+            "verified": false,
+            "note": "baseUrl escrita de memória — confirmar na doc da DeepSeek antes de usar em produção."
+        },
+        "moonshot": {
+            "api": "openai-compatible",
+            "baseUrl": "https://api.moonshot.ai/v1",
+            "envKey": "MOONSHOT_API_KEY",
+            "verified": false,
+            "note": [
+                "baseUrl escrita de memória — confirmar na doc da Moonshot antes de usar.",
+                "",
+                "Atenção antes de apontar qualquer papel para cá: em 2026-08-09 o VanguardAI",
+                "verificou ao vivo que a Moonshot NUNCA expôs kimi-k3 no catálogo (só k2.6 e",
+                "k2.7-code) e que a conta está suspensa por saldo. O tier4 de lá foi migrado",
+                "para a Together por causa disso. Ver vanguardai/config/models.yaml."
+            ]
+        },
+        "together": {
+            "api": "openai-compatible",
+            "baseUrl": "https://api.together.xyz/v1",
+            "envKey": "TOGETHER_API_KEY",
+            "verified": false,
+            "note": "baseUrl escrita de memória — confirmar na doc da Together. É por onde o VanguardAI serve Kimi hoje."
+        },
+        "fireworks": {
+            "api": "openai-compatible",
+            "baseUrl": "https://api.fireworks.ai/inference/v1",
+            "envKey": "FIREWORKS_API_KEY",
+            "verified": false,
+            "note": "baseUrl escrita de memória — confirmar na doc da Fireworks."
+        },
+        "openrouter": {
+            "api": "openai-compatible",
+            "baseUrl": "https://openrouter.ai/api/v1",
+            "envKey": "OPENROUTER_API_KEY",
+            "verified": false,
+            "note": [
+                "baseUrl escrita de memória — confirmar na doc do OpenRouter.",
+                "",
+                "É o caminho mais curto para o passo 3 do plano (uma chave por produto, em",
+                "vez de uma por provedor): o OpenRouter já É um gateway OpenAI-compatível.",
+                "Antes de adotar, confirmar catálogo, preço e margem na documentação deles."
+            ]
+        }
+    },
+    "models": {
+        "claude-sonnet-5": {
+            "provider": "anthropic",
+            "note": "Padrão de conversa e redação em quase todo o portfólio."
+        },
+        "claude-opus-5": {
+            "provider": "anthropic",
+            "note": [
+                "Substituiu claude-opus-4-5 no papel raciocinio em 08/09/2026, a pedido do dono.",
+                "A escolha de USAR Opus ali não foi mexida — ninguém sabe por que aquela",
+                "chamada do contentseller (workers/claude.ts:725) é Opus, e trocar a decisão",
+                "sem saber o motivo seria pior que mantê-la.",
+                "",
+                "A troca de versão corrigiu de brinde um custo zero silencioso: pricing.ts do",
+                "coletor tem opus-5, 4-8, 4-7 e 4-6 — o comentário de lá diz que as gerações",
+                "anteriores estão presentes justamente \"para que uma troca de modelo num",
+                "produto não vire custo zero silencioso\" — e a 4-5 tinha escapado."
+            ]
+        },
+        "claude-sonnet-4-6": {
+            "provider": "anthropic",
+            "note": "Só emailseller. Ver divergences.emailsellerAtrasado."
+        },
+        "claude-haiku-4-5-20251001": {
+            "provider": "anthropic",
+            "note": "ID com data. hadrians e alfabetia usam esta forma; ver divergences.haikuComData."
+        },
+        "gpt-4o": {
+            "provider": "openai",
+            "note": "Conversa com lead no agenteup; visão no alfabetia."
+        },
+        "gpt-4o-mini": {
+            "provider": "openai",
+            "note": "Classificação e triagem de alto volume."
+        },
+        "gpt-oss-20b": {
+            "provider": "groq",
+            "note": "Apache-2.0 na Groq. Classificação barata em contentseller e vanguardai."
+        },
+        "gpt-oss-120b": {
+            "provider": "groq",
+            "note": "Irmão maior do 20b, mesma licença."
+        },
+        "text-embedding-3-small": {
+            "provider": "openai",
+            "note": "Único embedding em uso. Trocar exige reindexar TUDO — ver roles.embedding."
+        },
+        "whisper-1": {
+            "provider": "openai",
+            "note": "Transcrição de áudio no alfabetia (routes/materiais.ts)."
+        },
+        "dall-e-3": {
+            "provider": "openai",
+            "note": "Geração de imagem em contentseller e alfabetia."
+        },
+        "gemini-2.0-flash": {
+            "provider": "google",
+            "measuredEngine": true,
+            "note": [
+                "MOTOR MEDIDO, não ferramenta. hadrians consulta o Gemini para saber o que",
+                "o Gemini responde sobre a marca do cliente. Trocar por um modelo mais novo",
+                "muda a linha de base da medição.",
+                "",
+                "O cliente TypeScript não fala com o Google (Provider = anthropic|openai|groq),",
+                "então este modelo é inalcançável por resolveRole de propósito. Está aqui",
+                "porque o catálogo também alimenta preço — e hoje o pricing.ts do coletor NÃO",
+                "conhece gemini-2.0-flash, ou seja, esse gasto não está sendo precificado."
+            ]
+        }
+    },
+    "roles": {
+        "conversa": {
+            "description": "Atendimento com cliente final, em tempo real.",
+            "cascade": [
+                "claude-sonnet-5",
+                "gpt-4o"
+            ]
+        },
+        "redacao": {
+            "description": "Texto longo ou criativo — roteiro, e-mail, narrativa.",
+            "cascade": [
+                "claude-sonnet-5",
+                "gpt-4o"
+            ]
+        },
+        "raciocinio": {
+            "description": "Tarefa cara que justifica o modelo mais forte disponível.",
+            "cascade": [
+                "claude-opus-5",
+                "claude-sonnet-5"
+            ]
+        },
+        "classificacao": {
+            "description": "Triagem, extração de campo, rotulagem. Alto volume, barato.",
+            "cascade": [
+                "gpt-4o-mini",
+                "gpt-oss-20b"
+            ]
+        },
+        "visao": {
+            "description": "Leitura de imagem — auditoria de arte, conferência de texto em peça.",
+            "cascade": [
+                "gpt-4o",
+                "claude-sonnet-5"
+            ]
+        },
+        "embedding": {
+            "description": "Vetorização para busca semântica.",
+            "cascade": [
+                "text-embedding-3-small"
+            ],
+            "note": [
+                "Cascata de um elemento só, e é de propósito: cair para outro modelo de",
+                "embedding produziria vetores de outro espaço, que não são comparáveis com",
+                "os já indexados. A busca não falharia — devolveria resultado errado em",
+                "silêncio, que é pior. Trocar aqui exige reindexar tudo, nunca é só editar",
+                "a linha."
+            ]
+        },
+        "transcricao": {
+            "description": "Áudio para texto.",
+            "cascade": [
+                "whisper-1"
+            ]
+        },
+        "imagem": {
+            "description": "Geração de imagem.",
+            "cascade": [
+                "dall-e-3"
+            ]
+        }
+    },
+    "products": {
+        "AGENTEUP": {
+            "roles": {
+                "conversa": {
+                    "cascade": [
+                        "gpt-4o",
+                        "gpt-4o-mini"
+                    ],
+                    "reason": "O atendimento ao lead roda em gpt-4o desde antes do registro existir. Mantido idêntico para a migração não mudar comportamento; consolidar em claude-sonnet-5 é decisão à parte, com o custo medido antes."
+                }
+            }
+        },
+        "EMAILSELLER": {
+            "roles": {
+                "conversa": {
+                    "cascade": [
+                        "claude-sonnet-4-6"
+                    ],
+                    "reason": "Divergência conhecida, não escolha: ficou para trás quando o resto migrou para sonnet-5. Ver divergences.emailsellerAtrasado — este override existe para a migração ser fiel, e deve sumir junto com a divergência."
+                },
+                "redacao": {
+                    "cascade": [
+                        "claude-sonnet-4-6"
+                    ],
+                    "reason": "Mesma divergência acima."
+                }
+            }
+        }
+    },
+    "divergences": {
+        "_sobre": "Achados do levantamento de 08/09/2026, para a migração ter checklist. Cada item some daqui quando for resolvido — ou ganha uma razão e vira override permanente.",
+        "emailsellerAtrasado": {
+            "onde": "emailseller: seller.routes.ts, seller.usagePayload.ts (4 ocorrências)",
+            "o_que": "Único produto ainda em claude-sonnet-4-6; todos os outros estão em claude-sonnet-5.",
+            "risco": "Baixo. Corrige-se junto da migração do emailseller."
+        },
+        "opusSolto": {
+            "onde": "contentseller: apps/api/src/workers/claude.ts:725",
+            "o_que": "Uma única chamada em Opus no meio de 18 em claude-sonnet-5, sem razão registrada. Em 08/09/2026 a VERSÃO foi atualizada de claude-opus-4-5 para claude-opus-5; a ESCOLHA de usar Opus continua sem explicação.",
+            "risco": "Custo. Opus é ~1,7x o Sonnet na entrada e na saída. Enquanto ninguém souber por que aquela linha é Opus, não dá para dizer se é dinheiro bem gasto — e a migração do contentseller é a hora de olhar o que aquela chamada faz."
+        },
+        "haikuComData": {
+            "onde": "hadrians (guardian_service.py, ml/text_generator.py) e alfabetia (services/claude.ts)",
+            "o_que": "Usam claude-haiku-4-5-20251001, com data; outros lugares usam o alias sem data.",
+            "risco": "Baixo, mas as duas formas convivendo fazem o mesmo modelo aparecer como dois no relatório de custo."
+        },
+        "geminiSemPreco": {
+            "onde": "hadrians: ai_visibility_collector.py, brand_xray_service.py",
+            "o_que": "gemini-2.0-flash é chamado em produção e NÃO existe no pricing.ts do coletor.",
+            "risco": "Alto para a conta: esse consumo não aparece em lugar nenhum do custo. É motor medido, então não se troca — o que falta é preço, não substituição."
+        }
+    }
+}

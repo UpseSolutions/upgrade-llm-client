@@ -11,7 +11,13 @@ async function completeWithFallback(config, params) {
     for (let i = 0; i < config.steps.length; i++) {
         const step = config.steps[i];
         try {
-            const result = await (0, complete_1.complete)({ ...params, provider: step.provider, apiKey: step.apiKey, model: step.model });
+            const result = await (0, complete_1.complete)({
+                ...params,
+                provider: step.provider,
+                apiKey: step.apiKey,
+                model: step.model,
+                providerSpec: step.providerSpec,
+            });
             return {
                 ...result,
                 providerUsed: step.provider,
