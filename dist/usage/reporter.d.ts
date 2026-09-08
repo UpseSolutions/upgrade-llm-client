@@ -1,4 +1,4 @@
-import { Product, Provider, TokenUsage } from '../core/types';
+import { Product, ProviderId, TokenUsage } from '../core/types';
 export interface ReporterConfig {
     product: Product;
     collectorUrl: string;
@@ -6,7 +6,7 @@ export interface ReporterConfig {
 }
 export interface UsageEvent {
     feature: string;
-    provider: Provider;
+    provider: ProviderId;
     model: string;
     tokensIn: number;
     tokensOut: number;
@@ -16,7 +16,7 @@ export interface UsageEvent {
     success: boolean;
     errorType?: string;
     fallbackTriggered?: boolean;
-    fallbackFromProvider?: Provider;
+    fallbackFromProvider?: ProviderId;
     streaming?: boolean;
 }
 export declare function reportUsage(config: ReporterConfig | undefined, event: UsageEvent): void;

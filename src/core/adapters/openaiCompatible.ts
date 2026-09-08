@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import Groq from 'groq-sdk';
-import { CompleteParams, CompletionResult, Provider, TokenUsage } from '../types';
+import { CompleteParams, CompletionResult, ProviderSpec, TokenUsage } from '../types';
 
 // groq-sdk espelha a mesma interface chat.completions.create da OpenAI —
 // um único adapter cobre os dois provedores (evita duplicar a mesma lógica
@@ -10,11 +10,14 @@ import { CompleteParams, CompletionResult, Provider, TokenUsage } from '../types
 // porque TS não resolve overloads de um union OpenAI | Groq.
 // fetch nativo forçado pelo mesmo motivo do adapter Anthropic (ver
 // newAnthropicClient) — consistência entre os três provedores.
-function getClient(provider: 'openai' | 'groq', apiKey: string): OpenAI {
+// `baseURL: undefined` é o padrão do SDK — o caminho da OpenAI não muda em
+// nada. É essa uma linha que faz DeepSeek, Moonshot, Together, Fireworks e
+// OpenRouter passarem a ser configuração em vez de código: todos falam a mesma
+// API, só noutra URL.
+function getClient(spec: ProviderSpec, apiKey: string): OpenAI {
   const fetchOpt = { fetch: globalThis.fetch as any };
-  return provider === 'openai'
-    ? new OpenAI({ apiKey, ...fetchOpt })
-    : (new Groq({ apiKey, ...fetchOpt }) as unknown as OpenAI);
+  if (spec.sdk === 'groq') return new Groq({ apiKey, ...fetchOpt }) as unknown as OpenAI;
+  return new OpenAI({ apiKey, baseURL: spec.baseUrl, ...fetchOpt });
 }
 
 function buildMessages(params: CompleteParams) {
@@ -25,10 +28,10 @@ function buildMessages(params: CompleteParams) {
 }
 
 export async function completeOpenAICompatible(
-  provider: Extract<Provider, 'openai' | 'groq'>,
+  spec: ProviderSpec,
   params: CompleteParams,
 ): Promise<CompletionResult> {
-  const client = getClient(provider, params.apiKey);
+  const client = getClient(spec, params.apiKey);
   const response = await client.chat.completions.create(
     {
       model: params.model,
@@ -66,10 +69,10 @@ export interface OpenAIStreamResult {
 // caso o reporter grava tokens=0 e quem chama ainda recebe o stream
 // intacto, só sem visibilidade de custo nesta chamada).
 export async function* streamOpenAICompatible(
-  provider: Extract<Provider, 'openai' | 'groq'>,
+  spec: ProviderSpec,
   params: CompleteParams,
 ): AsyncGenerator<OpenAI.ChatCompletionChunk, OpenAIStreamResult, void> {
-  const client = getClient(provider, params.apiKey);
+  const client = getClient(spec, params.apiKey);
   const stream = await client.chat.completions.create(
     {
       model: params.model,

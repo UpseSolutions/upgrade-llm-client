@@ -1,4 +1,5 @@
-import { resolveRole, modelCatalog, roles, Role } from '../models/registry';
+import { resolveRole, modelCatalog, roles, providerIds, requiredEnvKeys, providerSpecOf } from '../models/registry';
+import { providerSpecDe } from '../core/complete';
 import registry from '../models/models.json';
 
 /**
@@ -16,9 +17,18 @@ import registry from '../models/models.json';
 describe('resolveRole', () => {
   it('devolve a cascata na ordem, com o provedor de cada modelo', () => {
     expect(resolveRole('conversa')).toEqual([
-      { model: 'claude-sonnet-5', provider: 'anthropic' },
-      { model: 'gpt-4o', provider: 'openai' },
+      { model: 'claude-sonnet-5', provider: 'anthropic', providerSpec: { api: 'anthropic' } },
+      { model: 'gpt-4o', provider: 'openai', providerSpec: { api: 'openai-compatible' } },
     ]);
+  });
+
+  it('os três nativos não ganham baseUrl — a URL padrão do SDK é a certa', () => {
+    // Se aparecesse baseUrl aqui, o caminho que roda em produção nos quatro
+    // produtos teria mudado. A mudança é aditiva de propósito.
+    for (const passo of resolveRole('classificacao')) {
+      expect(passo.providerSpec.baseUrl).toBeUndefined();
+    }
+    expect(resolveRole('classificacao')[1].providerSpec.sdk).toBe('groq');
   });
 
   it('aplica o override do produto quando existe', () => {
@@ -30,9 +40,10 @@ describe('resolveRole', () => {
 
   it('a forma do retorno serve direto para completeWithFallback', () => {
     // FallbackStep menos a apiKey — a lib nunca lê chave sozinha, e o registro
-    // não muda isso: ele diz QUAL modelo, nunca com que credencial.
+    // não muda isso: ele diz QUAL modelo, de qual provedor e por qual URL,
+    // nunca com que credencial.
     for (const passo of resolveRole('redacao')) {
-      expect(Object.keys(passo).sort()).toEqual(['model', 'provider']);
+      expect(Object.keys(passo).sort()).toEqual(['model', 'provider', 'providerSpec']);
     }
   });
 
@@ -138,5 +149,109 @@ describe('as divergências do levantamento', () => {
 
   it('gemini-2.0-flash está entre elas — roda em produção sem preço', () => {
     expect(registry.divergences.geminiSemPreco.onde).toMatch(/hadrians/);
+  });
+});
+
+describe('provedor é dado, não código', () => {
+  // O que isto destrava: antes, "trocar Kimi por DeepSeek" era editar um union
+  // fechado em TypeScript e o getClient do adapter — mudança de código em oito
+  // repos. Agora é uma entrada em providers, com baseUrl.
+  it('declara os provedores OpenAI-compatíveis que ainda não estão em uso', () => {
+    const ids = providerIds().map((p) => p.id);
+    for (const novo of ['deepseek', 'moonshot', 'together', 'fireworks', 'openrouter']) {
+      expect(ids).toContain(novo);
+    }
+  });
+
+  it('nenhum papel aponta para provedor cuja baseUrl não foi conferida', () => {
+    // baseUrl escrita de memória não vai para produção por acidente: confirmar
+    // na doc e marcar `verified` é um passo consciente, com alguém tendo
+    // olhado. É o mesmo cuidado que o models.yaml do VanguardAI registra —
+    // catálogo e URL de provedor mudam sem aviso, e em 2026-08-09 dois slugs
+    // de lá tinham sumido do catálogo do provedor.
+    for (const papel of roles()) {
+      for (const passo of resolveRole(papel)) {
+        const p = providerIds().find((x) => x.id === passo.provider);
+        expect({ papel, provider: passo.provider, verified: p?.verified }).toEqual({
+          papel,
+          provider: passo.provider,
+          verified: true,
+        });
+      }
+    }
+  });
+
+  it('apontar um papel para provedor não conferido falha com a razão', () => {
+    const original = JSON.parse(JSON.stringify(registry.models));
+    (registry.models as Record<string, unknown>)['deepseek-chat'] = { provider: 'deepseek' };
+    const cascataOriginal = registry.roles.raciocinio.cascade;
+    registry.roles.raciocinio.cascade = ['deepseek-chat'];
+    try {
+      expect(() => resolveRole('raciocinio')).toThrow(/verified: false/);
+    } finally {
+      registry.roles.raciocinio.cascade = cascataOriginal;
+      (registry as { models: unknown }).models = original;
+    }
+  });
+
+  it('depois de conferido, o provedor novo vem com baseUrl pronta para uso', () => {
+    // Este é o ponto inteiro do passo: nenhuma linha de TypeScript muda para o
+    // DeepSeek passar a funcionar — só o JSON.
+    const modelosOriginais = JSON.parse(JSON.stringify(registry.models));
+    const verificadoOriginal = registry.providers.deepseek.verified;
+    const cascataOriginal = registry.roles.raciocinio.cascade;
+
+    (registry.models as Record<string, unknown>)['deepseek-chat'] = { provider: 'deepseek' };
+    registry.providers.deepseek.verified = true;
+    registry.roles.raciocinio.cascade = ['deepseek-chat'];
+    try {
+      expect(resolveRole('raciocinio')).toEqual([
+        {
+          model: 'deepseek-chat',
+          provider: 'deepseek',
+          providerSpec: { api: 'openai-compatible', baseUrl: 'https://api.deepseek.com/v1' },
+        },
+      ]);
+      expect(requiredEnvKeys('raciocinio')).toEqual(['DEEPSEEK_API_KEY']);
+    } finally {
+      registry.roles.raciocinio.cascade = cascataOriginal;
+      registry.providers.deepseek.verified = verificadoOriginal;
+      (registry as { models: unknown }).models = modelosOriginais;
+    }
+  });
+});
+
+describe('requiredEnvKeys', () => {
+  // Serve para o produto conferir na SUBIDA o que falta. É assim que uma troca
+  // de provedor costuma dar errado: o código novo sobe, e só o primeiro cliente
+  // a passar por aquele caminho descobre que a chave não existe naquele
+  // ambiente.
+  it('devolve o nome da variável, nunca o valor', () => {
+    expect(requiredEnvKeys('conversa')).toEqual(['ANTHROPIC_API_KEY', 'OPENAI_API_KEY']);
+  });
+
+  it('não repete quando a cascata inteira é do mesmo provedor', () => {
+    expect(requiredEnvKeys('conversa', 'AGENTEUP')).toEqual(['OPENAI_API_KEY']);
+  });
+});
+
+describe('providerSpecDe (compatibilidade)', () => {
+  // Os quatro produtos em produção chamam complete() com 'anthropic',
+  // 'openai' ou 'groq' e nenhum providerSpec. Nada disso pode ter mudado.
+  it('os três nativos seguem funcionando sem spec', () => {
+    expect(providerSpecDe({ provider: 'anthropic' })).toEqual({ api: 'anthropic' });
+    expect(providerSpecDe({ provider: 'openai' })).toEqual({ api: 'openai-compatible' });
+    expect(providerSpecDe({ provider: 'groq' })).toEqual({ api: 'openai-compatible', sdk: 'groq' });
+  });
+
+  it('provedor novo sem spec falha na hora, dizendo o nome', () => {
+    // Adivinhar URL de provedor é chute que só se descobre em produção.
+    expect(() => providerSpecDe({ provider: 'deepseek' })).toThrow(/deepseek/);
+    expect(() => providerSpecDe({ provider: 'deepseek' })).toThrow(/providerSpec/);
+  });
+
+  it('provedor do catálogo que o cliente não fala é recusado com a razão', () => {
+    expect(() => providerSpecDe({ provider: 'google', providerSpec: providerSpecOf('google') }))
+      .toThrow(/não fala com ele/);
   });
 });

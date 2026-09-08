@@ -3,6 +3,9 @@ export { FallbackConfig, FallbackStep, FallbackResult } from './fallback/cascade
 export { isRetryable } from './fallback/isRetryable';
 export {
   Provider,
+  ProviderId,
+  ProviderApi,
+  ProviderSpec,
   Product,
   LLMMessage,
   CompleteParams,
@@ -15,7 +18,12 @@ export {
   ResolvedModel,
   CatalogEntry,
   resolveRole,
+  requiredEnvKeys,
+  envKeyOf,
+  providerSpecOf,
   modelCatalog,
   roles,
+  providerIds,
   REGISTRY_VERSION,
 } from './models/registry';
+export { providerSpecDe } from './core/complete';

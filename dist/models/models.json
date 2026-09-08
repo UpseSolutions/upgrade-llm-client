@@ -1,5 +1,5 @@
 {
-    "version": 1,
+    "version": 2,
     "updatedAt": "2026-09-08",
     "_leiaMe": [
         "Registro central de modelos do portfólio Upgrade Soluções.",
@@ -34,6 +34,111 @@
         "Motor medido entra no catálogo (precisa de preço) e NUNCA entra numa role.",
         "Há teste travando isso."
     ],
+    "_sobreProvedores": [
+        "Provedor é DADO, não código. Antes deste bloco, trocar de provedor era editar",
+        "um union fechado em TypeScript e o getClient do adapter — ou seja, trocar Kimi",
+        "por DeepSeek era mudança de código em oito repos.",
+        "",
+        "Quase todo mundo fala a API da OpenAI: DeepSeek, Moonshot, Together, Fireworks",
+        "e OpenRouter mudam a URL e mais nada. Por isso `baseUrl` aqui é o campo que faz",
+        "um provedor novo funcionar sem tocar em código.",
+        "",
+        "`envKey` é o NOME da variável de ambiente, nunca o valor. A lib continua sem ler",
+        "env var sozinha — o nome serve para o produto saber qual chave falta antes de",
+        "subir, em vez de descobrir na primeira chamada em produção.",
+        "",
+        "`verified: false` significa que a baseUrl foi escrita de memória e NÃO foi",
+        "confirmada contra a documentação do provedor. Nenhum papel pode apontar para um",
+        "provedor não verificado — há teste travando. O precedente é o models.yaml do",
+        "VanguardAI, que registra a data de cada conferência ao vivo justamente porque",
+        "catálogo e URL de provedor mudam sem aviso."
+    ],
+    "providers": {
+        "anthropic": {
+            "api": "anthropic",
+            "envKey": "ANTHROPIC_API_KEY",
+            "verified": true,
+            "note": "Nativo desde antes do registro. URL padrão do SDK."
+        },
+        "openai": {
+            "api": "openai-compatible",
+            "envKey": "OPENAI_API_KEY",
+            "verified": true,
+            "note": "Nativo. URL padrão do SDK."
+        },
+        "groq": {
+            "api": "openai-compatible",
+            "sdk": "groq",
+            "envKey": "GROQ_API_KEY",
+            "verified": true,
+            "note": [
+                "Usa o groq-sdk, não OpenAI+baseUrl. É exceção deliberada: roda assim em",
+                "produção nos quatro produtos desde antes do registro, e trocar seria",
+                "equivalente no papel e risco sem ganho. O registro descreve o que É.",
+                "",
+                "Quirk conhecido: o Groq não devolve `usage` no stream nem com",
+                "stream_options.include_usage — nessa chamada o custo fica sem visibilidade."
+            ]
+        },
+        "google": {
+            "envKey": "GEMINI_API_KEY",
+            "verified": true,
+            "note": [
+                "SEM `api` de propósito: este cliente não fala com o Google. Existe aqui",
+                "porque o catálogo também alimenta preço, e gemini-2.0-flash roda em",
+                "produção no hadrians (chamado por httpx direto, em Python).",
+                "resolveRole recusa qualquer papel que aponte para cá."
+            ]
+        },
+        "deepseek": {
+            "api": "openai-compatible",
+            "baseUrl": "https://api.deepseek.com/v1",
+            "envKey": "DEEPSEEK_API_KEY",
+            "verified": false,
+            "note": "baseUrl escrita de memória — confirmar na doc da DeepSeek antes de usar em produção."
+        },
+        "moonshot": {
+            "api": "openai-compatible",
+            "baseUrl": "https://api.moonshot.ai/v1",
+            "envKey": "MOONSHOT_API_KEY",
+            "verified": false,
+            "note": [
+                "baseUrl escrita de memória — confirmar na doc da Moonshot antes de usar.",
+                "",
+                "Atenção antes de apontar qualquer papel para cá: em 2026-08-09 o VanguardAI",
+                "verificou ao vivo que a Moonshot NUNCA expôs kimi-k3 no catálogo (só k2.6 e",
+                "k2.7-code) e que a conta está suspensa por saldo. O tier4 de lá foi migrado",
+                "para a Together por causa disso. Ver vanguardai/config/models.yaml."
+            ]
+        },
+        "together": {
+            "api": "openai-compatible",
+            "baseUrl": "https://api.together.xyz/v1",
+            "envKey": "TOGETHER_API_KEY",
+            "verified": false,
+            "note": "baseUrl escrita de memória — confirmar na doc da Together. É por onde o VanguardAI serve Kimi hoje."
+        },
+        "fireworks": {
+            "api": "openai-compatible",
+            "baseUrl": "https://api.fireworks.ai/inference/v1",
+            "envKey": "FIREWORKS_API_KEY",
+            "verified": false,
+            "note": "baseUrl escrita de memória — confirmar na doc da Fireworks."
+        },
+        "openrouter": {
+            "api": "openai-compatible",
+            "baseUrl": "https://openrouter.ai/api/v1",
+            "envKey": "OPENROUTER_API_KEY",
+            "verified": false,
+            "note": [
+                "baseUrl escrita de memória — confirmar na doc do OpenRouter.",
+                "",
+                "É o caminho mais curto para o passo 3 do plano (uma chave por produto, em",
+                "vez de uma por provedor): o OpenRouter já É um gateway OpenAI-compatível.",
+                "Antes de adotar, confirmar catálogo, preço e margem na documentação deles."
+            ]
+        }
+    },
     "models": {
         "claude-sonnet-5": {
             "provider": "anthropic",
@@ -97,27 +202,44 @@
     "roles": {
         "conversa": {
             "description": "Atendimento com cliente final, em tempo real.",
-            "cascade": ["claude-sonnet-5", "gpt-4o"]
+            "cascade": [
+                "claude-sonnet-5",
+                "gpt-4o"
+            ]
         },
         "redacao": {
             "description": "Texto longo ou criativo — roteiro, e-mail, narrativa.",
-            "cascade": ["claude-sonnet-5", "gpt-4o"]
+            "cascade": [
+                "claude-sonnet-5",
+                "gpt-4o"
+            ]
         },
         "raciocinio": {
             "description": "Tarefa cara que justifica o modelo mais forte disponível.",
-            "cascade": ["claude-opus-4-5", "claude-sonnet-5"]
+            "cascade": [
+                "claude-opus-4-5",
+                "claude-sonnet-5"
+            ]
         },
         "classificacao": {
             "description": "Triagem, extração de campo, rotulagem. Alto volume, barato.",
-            "cascade": ["gpt-4o-mini", "gpt-oss-20b"]
+            "cascade": [
+                "gpt-4o-mini",
+                "gpt-oss-20b"
+            ]
         },
         "visao": {
             "description": "Leitura de imagem — auditoria de arte, conferência de texto em peça.",
-            "cascade": ["gpt-4o", "claude-sonnet-5"]
+            "cascade": [
+                "gpt-4o",
+                "claude-sonnet-5"
+            ]
         },
         "embedding": {
             "description": "Vetorização para busca semântica.",
-            "cascade": ["text-embedding-3-small"],
+            "cascade": [
+                "text-embedding-3-small"
+            ],
             "note": [
                 "Cascata de um elemento só, e é de propósito: cair para outro modelo de",
                 "embedding produziria vetores de outro espaço, que não são comparáveis com",
@@ -128,18 +250,25 @@
         },
         "transcricao": {
             "description": "Áudio para texto.",
-            "cascade": ["whisper-1"]
+            "cascade": [
+                "whisper-1"
+            ]
         },
         "imagem": {
             "description": "Geração de imagem.",
-            "cascade": ["dall-e-3"]
+            "cascade": [
+                "dall-e-3"
+            ]
         }
     },
     "products": {
         "AGENTEUP": {
             "roles": {
                 "conversa": {
-                    "cascade": ["gpt-4o", "gpt-4o-mini"],
+                    "cascade": [
+                        "gpt-4o",
+                        "gpt-4o-mini"
+                    ],
                     "reason": "O atendimento ao lead roda em gpt-4o desde antes do registro existir. Mantido idêntico para a migração não mudar comportamento; consolidar em claude-sonnet-5 é decisão à parte, com o custo medido antes."
                 }
             }
@@ -147,11 +276,15 @@
         "EMAILSELLER": {
             "roles": {
                 "conversa": {
-                    "cascade": ["claude-sonnet-4-6"],
+                    "cascade": [
+                        "claude-sonnet-4-6"
+                    ],
                     "reason": "Divergência conhecida, não escolha: ficou para trás quando o resto migrou para sonnet-5. Ver divergences.emailsellerAtrasado — este override existe para a migração ser fiel, e deve sumir junto com a divergência."
                 },
                 "redacao": {
-                    "cascade": ["claude-sonnet-4-6"],
+                    "cascade": [
+                        "claude-sonnet-4-6"
+                    ],
                     "reason": "Mesma divergência acima."
                 }
             }

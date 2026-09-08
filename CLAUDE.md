@@ -39,16 +39,31 @@ o TS enxerga deixaria dois produtos de fora, que é a situação que ele veio
 arrumar. O `models.json` é emitido para `dist/models/` no build
 (`resolveJsonModule`), e o Python lê o arquivo direto.
 
+**Provedor também é dado.** `providers` no mesmo JSON traz `api`, `baseUrl`,
+`envKey` e `verified`. Quase todo provedor fala a API da OpenAI — DeepSeek,
+Moonshot, Together, Fireworks e OpenRouter mudam a URL e mais nada —, então
+acrescentar um é escrever uma entrada, não mexer em adapter. `deepseek`,
+`moonshot`, `together`, `fireworks` e `openrouter` já estão declarados, com
+`verified: false`: a baseUrl foi escrita de memória e **nenhum papel pode
+apontar para elas** até alguém confirmar na doc do provedor e virar a flag. Há
+teste travando, e o precedente é o `models.yaml` do VanguardAI, que registra a
+data de cada conferência ao vivo porque URL e catálogo mudam sem aviso.
+
 **Produtos pedem papel, não modelo:** `conversa`, `redacao`, `raciocinio`,
 `classificacao`, `visao`, `embedding`, `transcricao`, `imagem`. Trocar de modelo
 vira uma linha editada num arquivo.
 
 ```ts
-import { resolveRole, completeWithFallback } from '@upgrade/llm-client'
+import { resolveRole, requiredEnvKeys, envKeyOf, completeWithFallback } from '@upgrade/llm-client'
 
-const steps = resolveRole('conversa', 'AGENTEUP')   // [{model, provider}, ...]
+// Na subida: falha aqui, não na primeira chamada em produção.
+for (const chave of requiredEnvKeys('conversa', 'AGENTEUP')) {
+  if (!process.env[chave]) throw new Error(`falta ${chave}`)
+}
+
+const steps = resolveRole('conversa', 'AGENTEUP')   // [{model, provider, providerSpec}, ...]
 await completeWithFallback(
-  { useCase: 'lead_chat', steps: steps.map((s) => ({ ...s, apiKey: chaveDe(s.provider) })) },
+  { useCase: 'lead_chat', steps: steps.map((s) => ({ ...s, apiKey: process.env[envKeyOf(s.provider)]! })) },
   { messages, maxTokens: 1024, feature: 'lead_chat' },
 )
 ```
@@ -68,11 +83,38 @@ recusa usá-lo, com erro explícito.
 exatamente o que espalhou os modelos por oito repos. Se não há razão que se
 escreva, use o default. `resolveRole` lança se faltar.
 
+### Compatibilidade: os três nativos não mudaram
+
+`anthropic`, `openai` e `groq` continuam funcionando sem `providerSpec` — é o
+que mantém rodando todo consumidor escrito antes do registro. Provedor fora dos
+três **exige** spec, e a falta dela falha na hora com o nome do provedor:
+adivinhar URL é o tipo de chute que só aparece em produção.
+
+O Groq segue no `groq-sdk` em vez de OpenAI+baseUrl. Equivalente no papel, mas
+é o que roda em produção nos quatro produtos — risco sem ganho. O registro
+descreve o que É, não o que seria mais bonito.
+
 ### Embedding tem cascata de um elemento só
 
 Cair para outro modelo de embedding produz vetores de outro espaço, que não são
 comparáveis com os já indexados. A busca não falharia — devolveria resultado
 errado em silêncio. Trocar ali exige reindexar tudo; nunca é só editar a linha.
+
+## O que ainda NÃO resolve
+
+O passo dado foi o primeiro de três. Ele torna a troca de provedor uma edição de
+JSON, mas duas coisas continuam exigindo trabalho por projeto:
+
+**A chave.** Um provedor novo ainda precisa da variável dele em cada ambiente
+que o usa. `requiredEnvKeys` diz qual falta antes de subir, mas não coloca a
+chave lá. Some de vez com um gateway (OpenRouter ou um nosso): uma chave por
+produto, e a escolha de provedor deixa de existir do lado do produto.
+
+**Propagação.** Os produtos instalam `github:...#main`, resolvido no
+`npm install`. Editar o `models.json` não chega em produto nenhum até ele
+reinstalar e fazer deploy — ou seja, "centralizado" ainda custa N deploys. A
+saída é o registro ser buscado no boot de uma URL, com a cópia compilada como
+fallback: se a busca falhar, usa a que veio no pacote e nunca bloqueia subida.
 
 ## Migração: o que falta
 

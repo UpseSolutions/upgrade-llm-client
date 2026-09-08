@@ -1,11 +1,19 @@
 export type Provider = 'anthropic' | 'openai' | 'groq';
+export type ProviderId = Provider | (string & {});
+export type ProviderApi = 'anthropic' | 'openai-compatible';
+export interface ProviderSpec {
+    api?: ProviderApi;
+    baseUrl?: string;
+    sdk?: 'groq';
+}
 export type Product = 'HADRIANS' | 'GOLDANALYZER' | 'ALFABETIA' | 'AGENTEUP' | 'CONTENTSELLER' | 'EMAILSELLER';
 export interface LLMMessage {
     role: 'user' | 'assistant';
     content: string | unknown[];
 }
 export interface CompleteParams {
-    provider: Provider;
+    provider: ProviderId;
+    providerSpec?: ProviderSpec;
     apiKey: string;
     model: string;
     messages: LLMMessage[];

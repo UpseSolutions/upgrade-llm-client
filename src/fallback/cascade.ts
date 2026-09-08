@@ -1,11 +1,13 @@
 import { complete } from '../core/complete';
-import { CompleteParams, CompletionResult, Provider } from '../core/types';
+import { CompleteParams, CompletionResult, ProviderId, ProviderSpec } from '../core/types';
 import { isRetryable } from './isRetryable';
 
 export interface FallbackStep {
-  provider: Provider;
+  provider: ProviderId;
   apiKey: string;
   model: string;
+  // Vem pronto de resolveRole. Ausente só para os três provedores nativos.
+  providerSpec?: ProviderSpec;
 }
 
 export interface FallbackConfig {
@@ -17,10 +19,10 @@ export interface FallbackConfig {
 }
 
 export interface FallbackResult extends CompletionResult {
-  providerUsed: Provider;
+  providerUsed: ProviderId;
   modelUsed: string;
   fallbackTriggered: boolean;
-  fallbackFromProvider?: Provider;
+  fallbackFromProvider?: ProviderId;
 }
 
 // Um hop por camada: tenta step[0], se for erro retryable tenta step[1], e
@@ -40,7 +42,13 @@ export async function completeWithFallback(
   for (let i = 0; i < config.steps.length; i++) {
     const step = config.steps[i];
     try {
-      const result = await complete({ ...params, provider: step.provider, apiKey: step.apiKey, model: step.model });
+      const result = await complete({
+        ...params,
+        provider: step.provider,
+        apiKey: step.apiKey,
+        model: step.model,
+        providerSpec: step.providerSpec,
+      });
       return {
         ...result,
         providerUsed: step.provider,

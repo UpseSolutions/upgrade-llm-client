@@ -1,18 +1,20 @@
-import { Provider, Product } from '../core/types';
+import { Provider, ProviderId, ProviderSpec, Product } from '../core/types';
 import registry from './models.json';
 
 // Acesso tipado ao registro central (src/models/models.json — leia o `_leiaMe`
 // de lá antes de mexer).
 //
-// A lib continua sem ler env var: o registro devolve QUAL modelo e de QUAL
-// provedor, nunca a chave. Quem chama segue decidindo de onde vêm as chaves,
-// exatamente como em complete() e completeWithFallback().
+// A lib continua sem ler env var: o registro devolve QUAL modelo, de QUAL
+// provedor e por QUAL URL — nunca a chave. Quem chama segue decidindo de onde
+// vêm as chaves. `envKeyOf` devolve o NOME da variável, não o valor.
 
 export type Role = keyof typeof registry.roles;
 
 export interface ResolvedModel {
   model: string;
-  provider: Provider;
+  provider: ProviderId;
+  /** Pronto para ir direto no CompleteParams — traz a baseUrl do provedor. */
+  providerSpec: ProviderSpec;
 }
 
 export interface CatalogEntry {
@@ -21,29 +23,40 @@ export interface CatalogEntry {
   measuredEngine: boolean;
 }
 
-const CLIENT_PROVIDERS: readonly string[] = ['anthropic', 'openai', 'groq'];
+type ProviderRecord = {
+  api?: string;
+  baseUrl?: string;
+  sdk?: string;
+  envKey: string;
+  verified: boolean;
+};
 
-function entry(model: string) {
-  const found = (registry.models as Record<string, { provider: string; measuredEngine?: boolean }>)[model];
+type ModelRecord = { provider: string; measuredEngine?: boolean };
+
+const providers = registry.providers as Record<string, ProviderRecord>;
+const models = registry.models as Record<string, ModelRecord>;
+
+function providerOf(id: string): ProviderRecord {
+  const found = providers[id];
   if (!found) {
-    throw new Error(`Modelo "${model}" não existe no registro (src/models/models.json)`);
+    throw new Error(`Provedor "${id}" não existe no registro (src/models/models.json)`);
   }
   return found;
 }
 
-/**
- * Resolve um papel na cascata de modelos que o atende, na ordem de tentativa.
- *
- * `product` aplica o override daquele produto quando existe. Override sem
- * `reason` no JSON é erro — divergência sem razão escrita é o que fez os
- * modelos se espalharem por oito repositórios em primeiro lugar.
- *
- * O retorno tem a forma de FallbackStep menos a apiKey, de propósito: quem
- * chama completa com a chave e passa direto para completeWithFallback.
- */
-export function resolveRole(role: Role, product?: Product): ResolvedModel[] {
+function modelOf(id: string): ModelRecord {
+  const found = models[id];
+  if (!found) {
+    throw new Error(`Modelo "${id}" não existe no registro (src/models/models.json)`);
+  }
+  return found;
+}
+
+function cascadeOf(role: Role, product?: Product): string[] {
   const override = product
-    ? (registry.products as Record<string, { roles?: Record<string, { cascade: string[]; reason?: string }> }>)[product]?.roles?.[role]
+    ? (registry.products as Record<string, { roles?: Record<string, { cascade: string[]; reason?: string }> }>)[
+        product
+      ]?.roles?.[role]
     : undefined;
 
   if (override && !override.reason) {
@@ -54,34 +67,92 @@ export function resolveRole(role: Role, product?: Product): ResolvedModel[] {
   }
 
   const cascade = override ? override.cascade : registry.roles[role].cascade;
-
   if (!cascade || cascade.length === 0) {
     throw new Error(`Papel "${role}" não tem nenhum modelo na cascata`);
   }
+  return cascade;
+}
 
-  return cascade.map((model) => {
-    const found = entry(model);
+/**
+ * Resolve um papel na cascata de modelos que o atende, na ordem de tentativa.
+ *
+ * O retorno tem a forma de FallbackStep menos a apiKey, de propósito: quem
+ * chama completa com a chave e passa direto para completeWithFallback.
+ */
+export function resolveRole(role: Role, product?: Product): ResolvedModel[] {
+  return cascadeOf(role, product).map((model) => {
+    const meta = modelOf(model);
+    const p = providerOf(meta.provider);
 
     // Motor medido é o objeto da medição, não ferramenta: hadrians consulta o
     // Gemini para saber o que o Gemini responde sobre a marca do cliente.
     // Trocá-lo mudaria o que está sendo medido, então ele nunca serve a um
     // papel — e a falha aqui é barulhenta porque o estrago seria silencioso.
-    if (found.measuredEngine) {
+    if (meta.measuredEngine) {
       throw new Error(
         `"${model}" é motor medido e não pode atender o papel "${role}" — ` +
           'trocar um motor medido muda o que o produto mede, não a ferramenta que ele usa.',
       );
     }
 
-    if (!CLIENT_PROVIDERS.includes(found.provider)) {
+    if (!p.api) {
       throw new Error(
-        `Provedor "${found.provider}" (de "${model}") não é falado por este cliente — ` +
-          `só ${CLIENT_PROVIDERS.join(', ')}.`,
+        `Provedor "${meta.provider}" (de "${model}") não é falado por este cliente — ` +
+          'está no catálogo apenas para ter preço.',
       );
     }
 
-    return { model, provider: found.provider as Provider };
+    // baseUrl escrita de memória não vai para produção por acidente. Confirmar
+    // na doc do provedor e virar `verified: true` é um passo consciente, com
+    // alguém tendo olhado — o precedente é o models.yaml do VanguardAI, que
+    // registra a data de cada conferência ao vivo.
+    if (!p.verified) {
+      throw new Error(
+        `Provedor "${meta.provider}" está marcado \`verified: false\` — a baseUrl ainda ` +
+          'não foi confirmada contra a documentação dele. Confirme e marque verified antes de apontar um papel para cá.',
+      );
+    }
+
+    return {
+      model,
+      provider: meta.provider as ProviderId,
+      providerSpec: {
+        api: p.api as ProviderSpec['api'],
+        ...(p.baseUrl ? { baseUrl: p.baseUrl } : {}),
+        ...(p.sdk ? { sdk: p.sdk as 'groq' } : {}),
+      },
+    };
   });
+}
+
+/**
+ * Os NOMES das variáveis de ambiente que este papel exige, sem repetição.
+ *
+ * Serve para o produto conferir na subida o que falta, em vez de descobrir na
+ * primeira chamada em produção — que é como uma troca de provedor costuma dar
+ * errado: o código novo sobe, e só o primeiro cliente a usar aquele caminho
+ * descobre que a chave não existe naquele ambiente.
+ *
+ * Devolve nome, nunca valor: a lib não lê env var.
+ */
+export function requiredEnvKeys(role: Role, product?: Product): string[] {
+  const chaves = resolveRole(role, product).map((r) => providerOf(r.provider as string).envKey);
+  return [...new Set(chaves)];
+}
+
+/** O nome da variável de ambiente de um provedor. */
+export function envKeyOf(provider: ProviderId): string {
+  return providerOf(provider as string).envKey;
+}
+
+/** O spec de um provedor, para quem chama complete() fora de um papel. */
+export function providerSpecOf(provider: ProviderId): ProviderSpec {
+  const p = providerOf(provider as string);
+  return {
+    api: p.api as ProviderSpec['api'],
+    ...(p.baseUrl ? { baseUrl: p.baseUrl } : {}),
+    ...(p.sdk ? { sdk: p.sdk as 'groq' } : {}),
+  };
 }
 
 /**
@@ -93,13 +164,11 @@ export function resolveRole(role: Role, product?: Product): ResolvedModel[] {
  * estar precificado em lugar nenhum.
  */
 export function modelCatalog(): CatalogEntry[] {
-  return Object.entries(registry.models as Record<string, { provider: string; measuredEngine?: boolean }>).map(
-    ([model, meta]) => ({
-      model,
-      provider: meta.provider,
-      measuredEngine: meta.measuredEngine === true,
-    }),
-  );
+  return Object.entries(models).map(([model, meta]) => ({
+    model,
+    provider: meta.provider,
+    measuredEngine: meta.measuredEngine === true,
+  }));
 }
 
 /** Os papéis existentes — útil para varredura e para teste de cobertura. */
@@ -107,4 +176,16 @@ export function roles(): Role[] {
   return Object.keys(registry.roles) as Role[];
 }
 
+/** Os provedores declarados, com o que já foi confirmado contra a doc deles. */
+export function providerIds(): { id: string; verified: boolean; callable: boolean }[] {
+  return Object.entries(providers).map(([id, p]) => ({
+    id,
+    verified: p.verified === true,
+    callable: Boolean(p.api),
+  }));
+}
+
 export const REGISTRY_VERSION = registry.version;
+
+// Reexportado para quem monta FallbackStep na mão sem passar por resolveRole.
+export type { Provider, ProviderId, ProviderSpec };
