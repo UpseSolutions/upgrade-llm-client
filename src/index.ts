@@ -24,6 +24,17 @@ export {
   modelCatalog,
   roles,
   providerIds,
+  registryVersion,
   REGISTRY_VERSION,
 } from './models/registry';
 export { providerSpecDe } from './core/complete';
+export {
+  carregarRegistro,
+  fonteDoRegistro,
+  registroAtual,
+  redefinirRegistro,
+  FonteDoRegistro,
+  CarregarOpcoes,
+  ResultadoDaCarga,
+  Registro,
+} from './models/carregar';

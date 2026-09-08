@@ -1,6 +1,6 @@
 import { Provider, ProviderId, ProviderSpec, Product } from '../core/types';
-import registry from './models.json';
-export type Role = keyof typeof registry.roles;
+import compilado from './models.json';
+export type Role = keyof typeof compilado.roles;
 export interface ResolvedModel {
     model: string;
     provider: ProviderId;
@@ -22,5 +22,6 @@ export declare function providerIds(): {
     verified: boolean;
     callable: boolean;
 }[];
+export declare function registryVersion(): number;
 export declare const REGISTRY_VERSION: number;
 export type { Provider, ProviderId, ProviderSpec };

@@ -144,9 +144,19 @@
       "provider": "anthropic",
       "note": "Padrão de conversa e redação em quase todo o portfólio."
     },
-    "claude-opus-4-5": {
+    "claude-opus-5": {
       "provider": "anthropic",
-      "note": "Só contentseller (workers/claude.ts:725). Ver divergences.opusSolto."
+      "note": [
+        "Substituiu claude-opus-4-5 no papel raciocinio em 08/09/2026, a pedido do dono.",
+        "A escolha de USAR Opus ali não foi mexida — ninguém sabe por que aquela",
+        "chamada do contentseller (workers/claude.ts:725) é Opus, e trocar a decisão",
+        "sem saber o motivo seria pior que mantê-la.",
+        "",
+        "A troca de versão corrigiu de brinde um custo zero silencioso: pricing.ts do",
+        "coletor tem opus-5, 4-8, 4-7 e 4-6 — o comentário de lá diz que as gerações",
+        "anteriores estão presentes justamente \"para que uma troca de modelo num",
+        "produto não vire custo zero silencioso\" — e a 4-5 tinha escapado."
+      ]
     },
     "claude-sonnet-4-6": {
       "provider": "anthropic",
@@ -217,7 +227,7 @@
     "raciocinio": {
       "description": "Tarefa cara que justifica o modelo mais forte disponível.",
       "cascade": [
-        "claude-opus-4-5",
+        "claude-opus-5",
         "claude-sonnet-5"
       ]
     },
@@ -299,8 +309,8 @@
     },
     "opusSolto": {
       "onde": "contentseller: apps/api/src/workers/claude.ts:725",
-      "o_que": "Uma única chamada em claude-opus-4-5 no meio de 18 em claude-sonnet-5.",
-      "risco": "Custo. Opus é várias vezes mais caro — se a escolha foi deliberada precisa de razão escrita; se foi acidente, é dinheiro saindo sem ninguém saber."
+      "o_que": "Uma única chamada em Opus no meio de 18 em claude-sonnet-5, sem razão registrada. Em 08/09/2026 a VERSÃO foi atualizada de claude-opus-4-5 para claude-opus-5; a ESCOLHA de usar Opus continua sem explicação.",
+      "risco": "Custo. Opus é ~1,7x o Sonnet na entrada e na saída. Enquanto ninguém souber por que aquela linha é Opus, não dá para dizer se é dinheiro bem gasto — e a migração do contentseller é a hora de olhar o que aquela chamada faz."
     },
     "haikuComData": {
       "onde": "hadrians (guardian_service.py, ml/text_generator.py) e alfabetia (services/claude.ts)",

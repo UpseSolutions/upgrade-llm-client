@@ -100,21 +100,56 @@ Cair para outro modelo de embedding produz vetores de outro espaço, que não s�
 comparáveis com os já indexados. A busca não falharia — devolveria resultado
 errado em silêncio. Trocar ali exige reindexar tudo; nunca é só editar a linha.
 
-## O que ainda NÃO resolve
+## O registro vem do coletor, no boot
 
-O passo dado foi o primeiro de três. Ele torna a troca de provedor uma edição de
-JSON, mas duas coisas continuam exigindo trabalho por projeto:
+```ts
+import { carregarRegistro, fonteDoRegistro } from '@upgrade/llm-client'
+
+// Uma vez, na subida do produto.
+await carregarRegistro({
+  collectorUrl: process.env.AI_USAGE_URL!,
+  apiKey: process.env.AI_USAGE_API_KEY!,
+  aoTerminar: (r) => logger.info(r, '[llm] registro de modelos'),
+})
+```
+
+O que o `ai-usage-collector` publica pelo console vira a configuração do
+produto no restart seguinte. Trocar um modelo deixou de custar seis deploys.
+
+**A frase que manda em tudo aqui:** *coletor fora do ar nunca pode impedir um
+produto de atender cliente.* Um produto que não sobe porque o serviço de
+faturamento caiu é um estrago muito maior do que rodar com a configuração da
+semana passada. Daí:
+
+- **Nunca lança.** Rede caída, 404, 500, JSON quebrado — tudo cai na cópia
+  compilada que veio no pacote.
+- **Tem prazo** (3s por padrão). Um coletor que aceita a conexão e não responde
+  é pior que um fora do ar: sem prazo, o produto fica subindo para sempre e
+  nenhum healthcheck acusa, porque o processo está vivo.
+- **É explícito.** Não busca sozinho na primeira chamada de `resolveRole`, o
+  que poria uma ida à rede dentro do caminho de uma resposta ao cliente. Quem
+  não chama continua na cópia compilada — que é como a lib se comportava antes
+  disto existir, e é o que permite migrar um produto de cada vez.
+- **Confere o que chegou.** Registro incoerente vindo da rede é PIOR que o
+  compilado, que ao menos foi revisado quando entrou no pacote. Um papel
+  apontando para modelo inexistente, ou um papel que SUMIU da edição nova, é
+  recusado — publicar sem o papel `transcricao` derrubaria todo produto que o
+  usa, no boot seguinte deles, longe de quem publicou.
+- **Diz de onde veio.** `fonteDoRegistro()` devolve `'compilado'` ou
+  `'coletor'`, e `aoTerminar` recebe o motivo quando caiu. Sem isso, "por que
+  este produto está com o modelo antigo?" vira investigação em vez de uma linha
+  de log.
+
+O TIPO `Role` vem da cópia compilada; os DADOS vêm do registro em uso. É a
+divisão certa: o compilador só conhece o que estava no pacote no build, mas o
+registro em uso pode ter papéis acrescentados depois.
+
+## O que ainda NÃO resolve
 
 **A chave.** Um provedor novo ainda precisa da variável dele em cada ambiente
 que o usa. `requiredEnvKeys` diz qual falta antes de subir, mas não coloca a
 chave lá. Some de vez com um gateway (OpenRouter ou um nosso): uma chave por
 produto, e a escolha de provedor deixa de existir do lado do produto.
-
-**Propagação.** Os produtos instalam `github:...#main`, resolvido no
-`npm install`. Editar o `models.json` não chega em produto nenhum até ele
-reinstalar e fazer deploy — ou seja, "centralizado" ainda custa N deploys. A
-saída é o registro ser buscado no boot de uma URL, com a cópia compilada como
-fallback: se a busca falhar, usa a que veio no pacote e nunca bloqueia subida.
 
 ## Migração: o que falta
 

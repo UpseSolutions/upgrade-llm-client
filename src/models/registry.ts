@@ -1,5 +1,6 @@
 import { Provider, ProviderId, ProviderSpec, Product } from '../core/types';
-import registry from './models.json';
+import compilado from './models.json';
+import { registroAtual } from './carregar';
 
 // Acesso tipado ao registro central (src/models/models.json — leia o `_leiaMe`
 // de lá antes de mexer).
@@ -8,7 +9,13 @@ import registry from './models.json';
 // provedor e por QUAL URL — nunca a chave. Quem chama segue decidindo de onde
 // vêm as chaves. `envKeyOf` devolve o NOME da variável, não o valor.
 
-export type Role = keyof typeof registry.roles;
+// O TIPO vem da cópia compilada; os DADOS vêm de registroAtual(), que pode ser
+// uma edição mais nova buscada no coletor. É a divisão certa: o compilador só
+// pode conhecer o que estava no pacote na hora do build, enquanto o registro em
+// uso pode ter papéis acrescentados depois. Papel novo que ainda não existe no
+// pacote é alcançável por string; papel REMOVIDO no coletor é recusado na
+// carga, para não derrubar quem já o usa.
+export type Role = keyof typeof compilado.roles;
 
 export interface ResolvedModel {
   model: string;
@@ -33,11 +40,11 @@ type ProviderRecord = {
 
 type ModelRecord = { provider: string; measuredEngine?: boolean };
 
-const providers = registry.providers as Record<string, ProviderRecord>;
-const models = registry.models as Record<string, ModelRecord>;
+const providers = () => registroAtual().providers as unknown as Record<string, ProviderRecord>;
+const models = () => registroAtual().models as unknown as Record<string, ModelRecord>;
 
 function providerOf(id: string): ProviderRecord {
-  const found = providers[id];
+  const found = providers()[id];
   if (!found) {
     throw new Error(`Provedor "${id}" não existe no registro (src/models/models.json)`);
   }
@@ -45,7 +52,7 @@ function providerOf(id: string): ProviderRecord {
 }
 
 function modelOf(id: string): ModelRecord {
-  const found = models[id];
+  const found = models()[id];
   if (!found) {
     throw new Error(`Modelo "${id}" não existe no registro (src/models/models.json)`);
   }
@@ -54,7 +61,7 @@ function modelOf(id: string): ModelRecord {
 
 function cascadeOf(role: Role, product?: Product): string[] {
   const override = product
-    ? (registry.products as Record<string, { roles?: Record<string, { cascade: string[]; reason?: string }> }>)[
+    ? (registroAtual().products as Record<string, { roles?: Record<string, { cascade: string[]; reason?: string }> }>)[
         product
       ]?.roles?.[role]
     : undefined;
@@ -66,9 +73,14 @@ function cascadeOf(role: Role, product?: Product): string[] {
     );
   }
 
-  const cascade = override ? override.cascade : registry.roles[role].cascade;
+  const definicao = registroAtual().roles[role as string];
+  if (!override && !definicao) {
+    throw new Error(`Papel "${String(role)}" não existe no registro em uso`);
+  }
+
+  const cascade = override ? override.cascade : definicao.cascade;
   if (!cascade || cascade.length === 0) {
-    throw new Error(`Papel "${role}" não tem nenhum modelo na cascata`);
+    throw new Error(`Papel "${String(role)}" não tem nenhum modelo na cascata`);
   }
   return cascade;
 }
@@ -164,7 +176,7 @@ export function providerSpecOf(provider: ProviderId): ProviderSpec {
  * estar precificado em lugar nenhum.
  */
 export function modelCatalog(): CatalogEntry[] {
-  return Object.entries(models).map(([model, meta]) => ({
+  return Object.entries(models()).map(([model, meta]) => ({
     model,
     provider: meta.provider,
     measuredEngine: meta.measuredEngine === true,
@@ -173,19 +185,25 @@ export function modelCatalog(): CatalogEntry[] {
 
 /** Os papéis existentes — útil para varredura e para teste de cobertura. */
 export function roles(): Role[] {
-  return Object.keys(registry.roles) as Role[];
+  return Object.keys(registroAtual().roles) as Role[];
 }
 
 /** Os provedores declarados, com o que já foi confirmado contra a doc deles. */
 export function providerIds(): { id: string; verified: boolean; callable: boolean }[] {
-  return Object.entries(providers).map(([id, p]) => ({
+  return Object.entries(providers()).map(([id, p]) => ({
     id,
     verified: p.verified === true,
     callable: Boolean(p.api),
   }));
 }
 
-export const REGISTRY_VERSION = registry.version;
+/** A versão do registro EM USO — muda quando o coletor entrega uma edição nova. */
+export function registryVersion(): number {
+  return registroAtual().version;
+}
+
+/** A versão que veio compilada no pacote. Constante, e é a reserva. */
+export const REGISTRY_VERSION = compilado.version;
 
 // Reexportado para quem monta FallbackStep na mão sem passar por resolveRole.
 export type { Provider, ProviderId, ProviderSpec };

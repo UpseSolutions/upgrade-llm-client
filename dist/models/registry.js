@@ -11,18 +11,20 @@ exports.providerSpecOf = providerSpecOf;
 exports.modelCatalog = modelCatalog;
 exports.roles = roles;
 exports.providerIds = providerIds;
+exports.registryVersion = registryVersion;
 const models_json_1 = __importDefault(require("./models.json"));
-const providers = models_json_1.default.providers;
-const models = models_json_1.default.models;
+const carregar_1 = require("./carregar");
+const providers = () => (0, carregar_1.registroAtual)().providers;
+const models = () => (0, carregar_1.registroAtual)().models;
 function providerOf(id) {
-    const found = providers[id];
+    const found = providers()[id];
     if (!found) {
         throw new Error(`Provedor "${id}" não existe no registro (src/models/models.json)`);
     }
     return found;
 }
 function modelOf(id) {
-    const found = models[id];
+    const found = models()[id];
     if (!found) {
         throw new Error(`Modelo "${id}" não existe no registro (src/models/models.json)`);
     }
@@ -30,15 +32,19 @@ function modelOf(id) {
 }
 function cascadeOf(role, product) {
     const override = product
-        ? models_json_1.default.products[product]?.roles?.[role]
+        ? (0, carregar_1.registroAtual)().products[product]?.roles?.[role]
         : undefined;
     if (override && !override.reason) {
         throw new Error(`Override de "${role}" em ${product} não tem \`reason\`. ` +
             'Toda divergência entre produtos precisa de razão escrita — sem ela, use o default.');
     }
-    const cascade = override ? override.cascade : models_json_1.default.roles[role].cascade;
+    const definicao = (0, carregar_1.registroAtual)().roles[role];
+    if (!override && !definicao) {
+        throw new Error(`Papel "${String(role)}" não existe no registro em uso`);
+    }
+    const cascade = override ? override.cascade : definicao.cascade;
     if (!cascade || cascade.length === 0) {
-        throw new Error(`Papel "${role}" não tem nenhum modelo na cascata`);
+        throw new Error(`Papel "${String(role)}" não tem nenhum modelo na cascata`);
     }
     return cascade;
 }
@@ -85,21 +91,24 @@ function providerSpecOf(provider) {
     };
 }
 function modelCatalog() {
-    return Object.entries(models).map(([model, meta]) => ({
+    return Object.entries(models()).map(([model, meta]) => ({
         model,
         provider: meta.provider,
         measuredEngine: meta.measuredEngine === true,
     }));
 }
 function roles() {
-    return Object.keys(models_json_1.default.roles);
+    return Object.keys((0, carregar_1.registroAtual)().roles);
 }
 function providerIds() {
-    return Object.entries(providers).map(([id, p]) => ({
+    return Object.entries(providers()).map(([id, p]) => ({
         id,
         verified: p.verified === true,
         callable: Boolean(p.api),
     }));
+}
+function registryVersion() {
+    return (0, carregar_1.registroAtual)().version;
 }
 exports.REGISTRY_VERSION = models_json_1.default.version;
 //# sourceMappingURL=registry.js.map
