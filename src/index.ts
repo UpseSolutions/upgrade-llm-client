@@ -9,3 +9,13 @@ export {
   CompletionResult,
   TokenUsage,
 } from './core/types';
+
+export {
+  Role,
+  ResolvedModel,
+  CatalogEntry,
+  resolveRole,
+  modelCatalog,
+  roles,
+  REGISTRY_VERSION,
+} from './models/registry';

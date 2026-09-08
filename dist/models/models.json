@@ -1,0 +1,183 @@
+{
+    "version": 1,
+    "updatedAt": "2026-09-08",
+    "_leiaMe": [
+        "Registro central de modelos do portfólio Upgrade Soluções.",
+        "",
+        "Este arquivo é a FONTE DA VERDADE. Trocar um modelo é editar uma linha aqui —",
+        "não é sair caçando string em oito repositórios. Foi exatamente esse o problema",
+        "que o motivou: em 08/09/2026 o levantamento achou ~70 identificadores de modelo",
+        "cravados no código, o emailseller parado em claude-sonnet-4-6 enquanto todo o",
+        "resto já estava em sonnet-5, e um claude-opus-4-5 solto no contentseller que",
+        "ninguém sabia que existia.",
+        "",
+        "É JSON, e não TypeScript, porque hadrians e vanguardai são Python. Um registro",
+        "que só o TypeScript enxerga deixaria dois produtos de fora — que é a situação",
+        "de hoje.",
+        "",
+        "Regra ao editar: TODA divergência entre produtos precisa de `reason`. Se não há",
+        "razão que se escreva, é para usar o default. Sem essa regra o arquivo vira, em",
+        "seis meses, a mesma bagunça espalhada que ele veio arrumar — só que num lugar."
+    ],
+    "_sobreMotoresMedidos": [
+        "Há dois usos de modelo, e confundi-los quebra produto.",
+        "",
+        "ROLE: 'preciso de um modelo que faça X'. O modelo é ferramenta e é trocável —",
+        "é para isso que o registro existe.",
+        "",
+        "MEASURED ENGINE: 'consulto ESTE motor porque o cliente quer saber o que ELE",
+        "responde'. Em hadrians (ai_visibility_collector, brand_xray_service) o produto",
+        "pergunta a vários motores o que dizem sobre uma marca. Trocar gemini-2.0-flash",
+        "por algo mais novo ali não melhora nada: muda O QUE ESTÁ SENDO MEDIDO e torna",
+        "os snapshots históricos incomparáveis entre si.",
+        "",
+        "Motor medido entra no catálogo (precisa de preço) e NUNCA entra numa role.",
+        "Há teste travando isso."
+    ],
+    "models": {
+        "claude-sonnet-5": {
+            "provider": "anthropic",
+            "note": "Padrão de conversa e redação em quase todo o portfólio."
+        },
+        "claude-opus-4-5": {
+            "provider": "anthropic",
+            "note": "Só contentseller (workers/claude.ts:725). Ver divergences.opusSolto."
+        },
+        "claude-sonnet-4-6": {
+            "provider": "anthropic",
+            "note": "Só emailseller. Ver divergences.emailsellerAtrasado."
+        },
+        "claude-haiku-4-5-20251001": {
+            "provider": "anthropic",
+            "note": "ID com data. hadrians e alfabetia usam esta forma; ver divergences.haikuComData."
+        },
+        "gpt-4o": {
+            "provider": "openai",
+            "note": "Conversa com lead no agenteup; visão no alfabetia."
+        },
+        "gpt-4o-mini": {
+            "provider": "openai",
+            "note": "Classificação e triagem de alto volume."
+        },
+        "gpt-oss-20b": {
+            "provider": "groq",
+            "note": "Apache-2.0 na Groq. Classificação barata em contentseller e vanguardai."
+        },
+        "gpt-oss-120b": {
+            "provider": "groq",
+            "note": "Irmão maior do 20b, mesma licença."
+        },
+        "text-embedding-3-small": {
+            "provider": "openai",
+            "note": "Único embedding em uso. Trocar exige reindexar TUDO — ver roles.embedding."
+        },
+        "whisper-1": {
+            "provider": "openai",
+            "note": "Transcrição de áudio no alfabetia (routes/materiais.ts)."
+        },
+        "dall-e-3": {
+            "provider": "openai",
+            "note": "Geração de imagem em contentseller e alfabetia."
+        },
+        "gemini-2.0-flash": {
+            "provider": "google",
+            "measuredEngine": true,
+            "note": [
+                "MOTOR MEDIDO, não ferramenta. hadrians consulta o Gemini para saber o que",
+                "o Gemini responde sobre a marca do cliente. Trocar por um modelo mais novo",
+                "muda a linha de base da medição.",
+                "",
+                "O cliente TypeScript não fala com o Google (Provider = anthropic|openai|groq),",
+                "então este modelo é inalcançável por resolveRole de propósito. Está aqui",
+                "porque o catálogo também alimenta preço — e hoje o pricing.ts do coletor NÃO",
+                "conhece gemini-2.0-flash, ou seja, esse gasto não está sendo precificado."
+            ]
+        }
+    },
+    "roles": {
+        "conversa": {
+            "description": "Atendimento com cliente final, em tempo real.",
+            "cascade": ["claude-sonnet-5", "gpt-4o"]
+        },
+        "redacao": {
+            "description": "Texto longo ou criativo — roteiro, e-mail, narrativa.",
+            "cascade": ["claude-sonnet-5", "gpt-4o"]
+        },
+        "raciocinio": {
+            "description": "Tarefa cara que justifica o modelo mais forte disponível.",
+            "cascade": ["claude-opus-4-5", "claude-sonnet-5"]
+        },
+        "classificacao": {
+            "description": "Triagem, extração de campo, rotulagem. Alto volume, barato.",
+            "cascade": ["gpt-4o-mini", "gpt-oss-20b"]
+        },
+        "visao": {
+            "description": "Leitura de imagem — auditoria de arte, conferência de texto em peça.",
+            "cascade": ["gpt-4o", "claude-sonnet-5"]
+        },
+        "embedding": {
+            "description": "Vetorização para busca semântica.",
+            "cascade": ["text-embedding-3-small"],
+            "note": [
+                "Cascata de um elemento só, e é de propósito: cair para outro modelo de",
+                "embedding produziria vetores de outro espaço, que não são comparáveis com",
+                "os já indexados. A busca não falharia — devolveria resultado errado em",
+                "silêncio, que é pior. Trocar aqui exige reindexar tudo, nunca é só editar",
+                "a linha."
+            ]
+        },
+        "transcricao": {
+            "description": "Áudio para texto.",
+            "cascade": ["whisper-1"]
+        },
+        "imagem": {
+            "description": "Geração de imagem.",
+            "cascade": ["dall-e-3"]
+        }
+    },
+    "products": {
+        "AGENTEUP": {
+            "roles": {
+                "conversa": {
+                    "cascade": ["gpt-4o", "gpt-4o-mini"],
+                    "reason": "O atendimento ao lead roda em gpt-4o desde antes do registro existir. Mantido idêntico para a migração não mudar comportamento; consolidar em claude-sonnet-5 é decisão à parte, com o custo medido antes."
+                }
+            }
+        },
+        "EMAILSELLER": {
+            "roles": {
+                "conversa": {
+                    "cascade": ["claude-sonnet-4-6"],
+                    "reason": "Divergência conhecida, não escolha: ficou para trás quando o resto migrou para sonnet-5. Ver divergences.emailsellerAtrasado — este override existe para a migração ser fiel, e deve sumir junto com a divergência."
+                },
+                "redacao": {
+                    "cascade": ["claude-sonnet-4-6"],
+                    "reason": "Mesma divergência acima."
+                }
+            }
+        }
+    },
+    "divergences": {
+        "_sobre": "Achados do levantamento de 08/09/2026, para a migração ter checklist. Cada item some daqui quando for resolvido — ou ganha uma razão e vira override permanente.",
+        "emailsellerAtrasado": {
+            "onde": "emailseller: seller.routes.ts, seller.usagePayload.ts (4 ocorrências)",
+            "o_que": "Único produto ainda em claude-sonnet-4-6; todos os outros estão em claude-sonnet-5.",
+            "risco": "Baixo. Corrige-se junto da migração do emailseller."
+        },
+        "opusSolto": {
+            "onde": "contentseller: apps/api/src/workers/claude.ts:725",
+            "o_que": "Uma única chamada em claude-opus-4-5 no meio de 18 em claude-sonnet-5.",
+            "risco": "Custo. Opus é várias vezes mais caro — se a escolha foi deliberada precisa de razão escrita; se foi acidente, é dinheiro saindo sem ninguém saber."
+        },
+        "haikuComData": {
+            "onde": "hadrians (guardian_service.py, ml/text_generator.py) e alfabetia (services/claude.ts)",
+            "o_que": "Usam claude-haiku-4-5-20251001, com data; outros lugares usam o alias sem data.",
+            "risco": "Baixo, mas as duas formas convivendo fazem o mesmo modelo aparecer como dois no relatório de custo."
+        },
+        "geminiSemPreco": {
+            "onde": "hadrians: ai_visibility_collector.py, brand_xray_service.py",
+            "o_que": "gemini-2.0-flash é chamado em produção e NÃO existe no pricing.ts do coletor.",
+            "risco": "Alto para a conta: esse consumo não aparece em lugar nenhum do custo. É motor medido, então não se troca — o que falta é preço, não substituição."
+        }
+    }
+}

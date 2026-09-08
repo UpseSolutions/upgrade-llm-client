@@ -12,6 +12,10 @@
     "skipLibCheck": true,
     "strict": true,
     "esModuleInterop": true,
+    // O registro de modelos é JSON e não TS porque hadrians e vanguardai são
+    // Python — um registro que só o TypeScript enxerga deixaria dois produtos
+    // de fora, que é a situação que ele veio arrumar.
+    "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src"],
