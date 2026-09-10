@@ -1,0 +1,19 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.redefinirRegistro = exports.registroAtual = exports.fonteDoRegistro = exports.carregarRegistro = exports.REGISTRY_VERSION = exports.registryVersion = exports.providerIds = exports.roles = exports.modelCatalog = exports.providerSpecOf = exports.envKeyOf = exports.requiredEnvKeys = exports.resolveRole = void 0;
+var registry_1 = require("./models/registry");
+Object.defineProperty(exports, "resolveRole", { enumerable: true, get: function () { return registry_1.resolveRole; } });
+Object.defineProperty(exports, "requiredEnvKeys", { enumerable: true, get: function () { return registry_1.requiredEnvKeys; } });
+Object.defineProperty(exports, "envKeyOf", { enumerable: true, get: function () { return registry_1.envKeyOf; } });
+Object.defineProperty(exports, "providerSpecOf", { enumerable: true, get: function () { return registry_1.providerSpecOf; } });
+Object.defineProperty(exports, "modelCatalog", { enumerable: true, get: function () { return registry_1.modelCatalog; } });
+Object.defineProperty(exports, "roles", { enumerable: true, get: function () { return registry_1.roles; } });
+Object.defineProperty(exports, "providerIds", { enumerable: true, get: function () { return registry_1.providerIds; } });
+Object.defineProperty(exports, "registryVersion", { enumerable: true, get: function () { return registry_1.registryVersion; } });
+Object.defineProperty(exports, "REGISTRY_VERSION", { enumerable: true, get: function () { return registry_1.REGISTRY_VERSION; } });
+var carregar_1 = require("./models/carregar");
+Object.defineProperty(exports, "carregarRegistro", { enumerable: true, get: function () { return carregar_1.carregarRegistro; } });
+Object.defineProperty(exports, "fonteDoRegistro", { enumerable: true, get: function () { return carregar_1.fonteDoRegistro; } });
+Object.defineProperty(exports, "registroAtual", { enumerable: true, get: function () { return carregar_1.registroAtual; } });
+Object.defineProperty(exports, "redefinirRegistro", { enumerable: true, get: function () { return carregar_1.redefinirRegistro; } });
+//# sourceMappingURL=registro.js.map

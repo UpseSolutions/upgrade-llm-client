@@ -100,6 +100,47 @@ Cair para outro modelo de embedding produz vetores de outro espaço, que não s�
 comparáveis com os já indexados. A busca não falharia — devolveria resultado
 errado em silêncio. Trocar ali exige reindexar tudo; nunca é só editar a linha.
 
+## Dois pontos de entrada
+
+```ts
+import { LLMClient, completeWithFallback } from '@upgrade/llm-client'          // fala com provedor
+import { resolveRole, carregarRegistro } from '@upgrade/llm-client/registro'   // só lê o registro
+```
+
+O subcaminho existe porque nem todo produto usa o cliente. O EmailSeller faz
+streaming direto na Anthropic e tem reporter de uso próprio — e ainda assim se
+beneficia de LER o registro para saber qual modelo usar. Sem o subcaminho, a
+escolha era carregar três SDKs de provedor para resolver uma string, ou manter o
+id cravado no produto: o problema que o registro existe para acabar.
+
+Medido, não suposto: a raiz carrega **135** módulos de SDK, o subcaminho carrega
+**zero**. Há teste medindo o grafo real num processo separado, com a raiz como
+contraprova — sem ela, um erro no filtro faria o teste passar sempre, medindo
+zero por não casar com nada.
+
+### O que o subcaminho NÃO resolve
+
+**Ele evita CARREGAR os SDKs, não INSTALAR.** As dependências do pacote
+(`@anthropic-ai/sdk`, `openai`, `groq-sdk`) continuam entrando no
+`node_modules` e na imagem de quem instala a lib, mesmo importando só o
+subcaminho. O ganho é de tempo de boot e memória, não de tamanho.
+
+Para resolver o tamanho, os SDKs teriam de virar `peerDependencies` opcionais —
+e aí os quatro produtos que já consomem a lib passariam a declarar os provedores
+que usam. É mudança maior, e não foi feita.
+
+### Ao mexer no subcaminho
+
+Declarar `exports` **fecha** o pacote: subcaminho não declarado deixa de
+resolver. A entrada `"."` tem de continuar lá, senão os quatro produtos que
+fazem `require('@upgrade/llm-client')` param de resolver de uma vez.
+
+E `main`/`types` continuam no package.json, mais um diretório-stub
+`registro/package.json` apontando para `../dist/registro.js`: resolvedor
+TypeScript clássico (`moduleResolution: node`) ignora `exports` por completo, e
+os consumidores estão em configurações diferentes. Um subcaminho que funciona na
+metade deles seria pior que não existir.
+
 ## O registro vem do coletor, no boot
 
 ```ts
