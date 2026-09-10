@@ -1,5 +1,5 @@
 {
-    "version": 4,
+    "version": 5,
     "updatedAt": "2026-09-10",
     "_leiaMe": [
         "Registro central de modelos do portfólio Upgrade Soluções.",
@@ -284,7 +284,8 @@
             "description": "Rapport e FAQ — conversa de alto volume onde o modelo barato basta, com escalada para um forte quando o assunto vira negociação.",
             "cascade": [
                 "openai/gpt-oss-20b",
-                "gpt-4o-mini"
+                "gpt-4o-mini",
+                "claude-haiku-4-5-20251001"
             ],
             "note": [
                 "Papel separado de `conversa`, e não uma posição da cascata dela.",
@@ -304,7 +305,13 @@
                 "",
                 "O `openai/gpt-oss-20b` não é chute: o ContentSeller mediu os dois em",
                 "16 nichos reais (mesma acurácia, metade do preço do 120b, mediana de",
-                "370ms contra 491ms) e roda com ele em produção."
+                "370ms contra 491ms) e roda com ele em produção.",
+                "",
+                "O terceiro passo (haiku) entrou na migração do Kompetent. Lá o plano gratuito",
+                "é servido por um caminho que fala direto com o SDK da Anthropic, e precisava",
+                "de um modelo barato DESSE provedor. Em vez de criar um papel por provedor, a",
+                "cascata carrega uma opção de cada um e cada chamador pega a primeira que o",
+                "caminho dele consegue chamar — a ordem segue expressando preferência."
             ]
         },
         "redacao": {
@@ -386,6 +393,18 @@
                         "claude-sonnet-4-6"
                     ],
                     "reason": "Mesma divergência acima."
+                }
+            }
+        },
+        "ALFABETIA": {
+            "roles": {
+                "redacao": {
+                    "cascade": [
+                        "claude-sonnet-5",
+                        "gpt-4o",
+                        "openai/gpt-oss-20b"
+                    ],
+                    "reason": "Cascata de TRÊS passos, herdada do llmFallback.ts: a geração de conteúdo do Kompetent nunca pode ficar sem saída, porque é o produto. O terceiro passo era llama-3.3-70b-versatile, desligado pelo Groq em 16/08/2026 — um passo morto no lugar onde ele só roda quando os dois primeiros caem juntos, ou seja, invisível até o dia em que faz falta."
                 }
             }
         }
