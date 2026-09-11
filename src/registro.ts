@@ -36,6 +36,8 @@ export {
   envKeyOf,
   providerSpecOf,
   modelCatalog,
+  modelPrice,
+  ModelPrice,
   roles,
   providerIds,
   registryVersion,

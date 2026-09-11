@@ -9,6 +9,7 @@ exports.requiredEnvKeys = requiredEnvKeys;
 exports.envKeyOf = envKeyOf;
 exports.providerSpecOf = providerSpecOf;
 exports.modelCatalog = modelCatalog;
+exports.modelPrice = modelPrice;
 exports.roles = roles;
 exports.providerIds = providerIds;
 exports.registryVersion = registryVersion;
@@ -95,7 +96,12 @@ function modelCatalog() {
         model,
         provider: meta.provider,
         measuredEngine: meta.measuredEngine === true,
+        ...(meta.price ? { price: meta.price } : {}),
     }));
+}
+function modelPrice(model) {
+    const meta = models()[model];
+    return meta?.price ?? null;
 }
 function roles() {
     return Object.keys((0, carregar_1.registroAtual)().roles);

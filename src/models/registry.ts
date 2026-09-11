@@ -24,10 +24,21 @@ export interface ResolvedModel {
   providerSpec: ProviderSpec;
 }
 
+/** USD por 1.000.000 de tokens — a unidade em que os provedores publicam. */
+export interface ModelPrice {
+  inputPerMTok: number;
+  outputPerMTok: number;
+  cachedPerMTok?: number;
+  /** Janela promocional de lançamento, quando existe. */
+  intro?: { until: string; inputPerMTok: number; outputPerMTok: number; cachedPerMTok?: number };
+}
+
 export interface CatalogEntry {
   model: string;
   provider: string;
   measuredEngine: boolean;
+  /** Ausente quando o modelo não tem preço declarado no registro. */
+  price?: ModelPrice;
 }
 
 type ProviderRecord = {
@@ -38,7 +49,7 @@ type ProviderRecord = {
   verified: boolean;
 };
 
-type ModelRecord = { provider: string; measuredEngine?: boolean };
+type ModelRecord = { provider: string; measuredEngine?: boolean; price?: ModelPrice };
 
 const providers = () => registroAtual().providers as unknown as Record<string, ProviderRecord>;
 const models = () => registroAtual().models as unknown as Record<string, ModelRecord>;
@@ -180,7 +191,27 @@ export function modelCatalog(): CatalogEntry[] {
     model,
     provider: meta.provider,
     measuredEngine: meta.measuredEngine === true,
+    ...(meta.price ? { price: meta.price } : {}),
   }));
+}
+
+/**
+ * O preço de um modelo, ou null quando o registro não declara um.
+ *
+ * **Null, nunca zero.** São coisas diferentes: zero é "custou nada", null é
+ * "não sei quanto custou". Confundi-los é como um modelo novo entra na base
+ * como gratuito e ninguém percebe até o custo por cliente estar errado há
+ * meses — foi assim com o gemini-2.0-flash, o claude-sonnet-4-6 e o
+ * claude-opus-4-5, três vezes seguidas.
+ *
+ * Existe porque produtos precificam por conta própria. O AgenteUP tem uma
+ * tabela local no openai.service.js que devolvia 0 para modelo desconhecido, e
+ * um papel resolvendo para um modelo fora dela viraria custo zero silencioso.
+ * Com isto, ele consulta o registro primeiro.
+ */
+export function modelPrice(model: string): ModelPrice | null {
+  const meta = models()[model];
+  return meta?.price ?? null;
 }
 
 /** Os papéis existentes — útil para varredura e para teste de cobertura. */
