@@ -1,6 +1,6 @@
 {
-    "version": 3,
-    "updatedAt": "2026-09-08",
+    "version": 5,
+    "updatedAt": "2026-09-10",
     "_leiaMe": [
         "Registro central de modelos do portfólio Upgrade Soluções.",
         "",
@@ -280,6 +280,40 @@
                 "gpt-4o"
             ]
         },
+        "conversa_barata": {
+            "description": "Rapport e FAQ — conversa de alto volume onde o modelo barato basta, com escalada para um forte quando o assunto vira negociação.",
+            "cascade": [
+                "openai/gpt-oss-20b",
+                "gpt-4o-mini",
+                "claude-haiku-4-5-20251001"
+            ],
+            "note": [
+                "Papel separado de `conversa`, e não uma posição da cascata dela.",
+                "",
+                "A cascata da lib só troca de modelo quando o provedor está",
+                "indisponível — ela existe para queda, não para escolha. Aqui a escolha",
+                "é de INTENÇÃO: rapport vai no barato, negociação vai no forte, e quem",
+                "decide é o código do produto lendo a conversa. Dois papéis descrevem",
+                "isso; uma cascata não.",
+                "",
+                "Nasceu de um achado no GoldAnalyzer: o chat público usava",
+                "`llama-3.3-70b-versatile` no primeiro passe, e esse id devolve 404 no",
+                "Groq desde 28/08/2026. O primeiro passe falhava em TODA mensagem, caía",
+                "no Claude, e o produto continuava respondendo — pagando preço de",
+                "Sonnet no que era para ser centavos, mais um round-trip perdido por",
+                "mensagem. Ninguém viu porque o fallback fez o trabalho dele.",
+                "",
+                "O `openai/gpt-oss-20b` não é chute: o ContentSeller mediu os dois em",
+                "16 nichos reais (mesma acurácia, metade do preço do 120b, mediana de",
+                "370ms contra 491ms) e roda com ele em produção.",
+                "",
+                "O terceiro passo (haiku) entrou na migração do Kompetent. Lá o plano gratuito",
+                "é servido por um caminho que fala direto com o SDK da Anthropic, e precisava",
+                "de um modelo barato DESSE provedor. Em vez de criar um papel por provedor, a",
+                "cascata carrega uma opção de cada um e cada chamador pega a primeira que o",
+                "caminho dele consegue chamar — a ordem segue expressando preferência."
+            ]
+        },
         "redacao": {
             "description": "Texto longo ou criativo — roteiro, e-mail, narrativa.",
             "cascade": [
@@ -361,6 +395,18 @@
                     "reason": "Mesma divergência acima."
                 }
             }
+        },
+        "ALFABETIA": {
+            "roles": {
+                "redacao": {
+                    "cascade": [
+                        "claude-sonnet-5",
+                        "gpt-4o",
+                        "openai/gpt-oss-20b"
+                    ],
+                    "reason": "Cascata de TRÊS passos, herdada do llmFallback.ts: a geração de conteúdo do Kompetent nunca pode ficar sem saída, porque é o produto. O terceiro passo era llama-3.3-70b-versatile, desligado pelo Groq em 16/08/2026 — um passo morto no lugar onde ele só roda quando os dois primeiros caem juntos, ou seja, invisível até o dia em que faz falta."
+                }
+            }
         }
     },
     "divergences": {
@@ -389,6 +435,11 @@
             "onde": "whisper-1 (alfabetia), dall-e-3 (contentseller e alfabetia)",
             "o_que": "Não são cobrados por token — é por minuto de áudio e por imagem —, e a forma de preço do registro só sabe expressar USD por milhão de tokens.",
             "risco": "Médio. Esse consumo nunca entra na conta, e inventar um número por token seria pior que a ausência, porque pareceria certo."
+        },
+        "llamaAposentadoNoGoldanalyzer": {
+            "onde": "goldanalyzer: backend/src/modules/public-chat/public-chat.service.ts:12",
+            "o_que": "Usa llama-3.3-70b-versatile, aposentado no Groq desde 28/08/2026 (404, \"does not exist or you do not have access to it\"). O primeiro passe do chat público falha em toda mensagem e escala para o Claude.",
+            "risco": "Custo e latência, silenciosos: o produto responde certo porque o fallback funciona, então nada parece errado. Todo rapport e FAQ está sendo pago a preço de Sonnet 5 desde 28/08, com um round-trip perdido antes de cada resposta. O papel conversa_barata corrige na migração do GoldAnalyzer."
         }
     },
     "_sobrePrecos": [

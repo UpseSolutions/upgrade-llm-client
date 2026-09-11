@@ -1,0 +1,5 @@
+{
+  "//": "Diretório-stub para resolvedores TypeScript clássicos (moduleResolution: node), que ignoram o campo `exports`. Os quatro produtos que consomem esta lib estão em configurações diferentes, e um subcaminho que só funciona na metade deles seria pior que não existir. Resolvedores modernos usam o `exports` do package.json da raiz e nunca chegam aqui.",
+  "main": "../dist/registro.js",
+  "types": "../dist/registro.d.ts"
+}
