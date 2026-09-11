@@ -1,4 +1,4 @@
-import { resolveRole, modelCatalog, roles, providerIds, requiredEnvKeys, providerSpecOf } from '../models/registry';
+import { resolveRole, modelCatalog, modelPrice, roles, providerIds, requiredEnvKeys, providerSpecOf } from '../models/registry';
 import { providerSpecDe } from '../core/complete';
 import registry from '../models/models.json';
 
@@ -260,5 +260,38 @@ describe('providerSpecDe (compatibilidade)', () => {
   it('provedor do catálogo que o cliente não fala é recusado com a razão', () => {
     expect(() => providerSpecDe({ provider: 'gemini', providerSpec: providerSpecOf('gemini') }))
       .toThrow(/não fala com ele/);
+  });
+});
+
+describe('preço do registro', () => {
+  // Existe porque produtos precificam por conta própria. O AgenteUP tem uma
+  // tabela local que devolvia 0 para modelo desconhecido — e um papel
+  // resolvendo para um modelo fora dela viraria custo zero silencioso.
+  it('devolve o preço declarado, na unidade que os provedores publicam', () => {
+    const p = modelPrice('claude-sonnet-5');
+    expect(p).toMatchObject({ inputPerMTok: 3, outputPerMTok: 15, cachedPerMTok: 0.3 });
+  });
+
+  it('devolve NULL — nunca zero — quando não há preço declarado', () => {
+    // Zero é "custou nada"; null é "não sei quanto custou". Confundi-los é como
+    // um modelo novo entra na base como gratuito e ninguém percebe até o custo
+    // por cliente estar errado há meses. Aconteceu três vezes: gemini-2.0-flash,
+    // claude-sonnet-4-6 e claude-opus-4-5.
+    expect(modelPrice('whisper-1')).toBeNull();
+    expect(modelPrice('modelo-que-nao-existe')).toBeNull();
+  });
+
+  it('o catálogo carrega o preço junto, para quem varre tudo', () => {
+    const comPreco = modelCatalog().filter((m) => m.price);
+    const semPreco = modelCatalog().filter((m) => !m.price);
+    expect(comPreco.length).toBeGreaterThan(0);
+    // Os sem preço são os que não são cobrados por token (whisper, dall-e) e o
+    // motor medido desligado. Ficarem visíveis é o ponto.
+    expect(semPreco.map((m) => m.model)).toContain('whisper-1');
+  });
+
+  it('a janela promocional vem junto quando existe', () => {
+    // Sem ela, quem consome o preço cobraria o cheio durante o lançamento.
+    expect(modelPrice('claude-sonnet-5')!.intro).toMatchObject({ inputPerMTok: 2 });
   });
 });
