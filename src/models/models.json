@@ -407,6 +407,18 @@
           "reason": "Cascata de TRÊS passos, herdada do llmFallback.ts: a geração de conteúdo do Kompetent nunca pode ficar sem saída, porque é o produto. O terceiro passo era llama-3.3-70b-versatile, desligado pelo Groq em 16/08/2026 — um passo morto no lugar onde ele só roda quando os dois primeiros caem juntos, ou seja, invisível até o dia em que faz falta."
         }
       }
+    },
+    "GOLDANALYZER": {
+      "roles": {
+        "redacao": {
+          "cascade": [
+            "claude-sonnet-5",
+            "gpt-4o",
+            "openai/gpt-oss-120b"
+          ],
+          "reason": "O gerador de ebook tem um seletor de provedor no admin (`platformConfig.ebook_provider`), e o ramo `groq` dele era a ÚNICA chamada de IA do produto que ainda falava direto com a API em vez de passar pela lib — com `llama-3.3-70b-versatile` escrito na linha, desligado pelo Groq em 16/08/2026. Ela devolvia 404 e virava `BadRequestException('Falha ao gerar conteúdo')`, indistinguível de um JSON malformado. O passo Groq entra na cascata para esse ramo ter de onde tirar o modelo sem literal, e o 120b e não o 20b porque aqui a saída é longa (7000 tokens de ebook), não a classificação curta que elegeu o 20b no ContentSeller."
+        }
+      }
     }
   },
   "divergences": {
@@ -435,11 +447,6 @@
       "onde": "whisper-1 (alfabetia), dall-e-3 (contentseller e alfabetia)",
       "o_que": "Não são cobrados por token — é por minuto de áudio e por imagem —, e a forma de preço do registro só sabe expressar USD por milhão de tokens.",
       "risco": "Médio. Esse consumo nunca entra na conta, e inventar um número por token seria pior que a ausência, porque pareceria certo."
-    },
-    "llamaAposentadoNoGoldanalyzer": {
-      "onde": "goldanalyzer: backend/src/modules/public-chat/public-chat.service.ts:12",
-      "o_que": "Usa llama-3.3-70b-versatile, aposentado no Groq desde 28/08/2026 (404, \"does not exist or you do not have access to it\"). O primeiro passe do chat público falha em toda mensagem e escala para o Claude.",
-      "risco": "Custo e latência, silenciosos: o produto responde certo porque o fallback funciona, então nada parece errado. Todo rapport e FAQ está sendo pago a preço de Sonnet 5 desde 28/08, com um round-trip perdido antes de cada resposta. O papel conversa_barata corrige na migração do GoldAnalyzer."
     }
   },
   "_sobrePrecos": [
