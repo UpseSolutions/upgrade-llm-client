@@ -124,6 +124,18 @@ describe('integridade do arquivo', () => {
     }
   });
 
+  it('a redacao do GOLDANALYZER mantém um passo no Groq', () => {
+    // O gerador de ebook tem um seletor de provedor no admin. O ramo `groq`
+    // dele procura o passo Groq DESTA cascata em vez de escrever um id na
+    // linha — era assim, com `llama-3.3-70b-versatile` literal, que ele passou
+    // semanas devolvendo 404 sem ninguém notar.
+    //
+    // Tirar o Groq daqui deixa aquele ramo sem modelo. Ele avisa alto em vez de
+    // falhar calado, mas o seletor do admin fica prometendo o que não entrega.
+    const groq = resolveRole('redacao', 'GOLDANALYZER').filter((m) => m.provider === 'groq');
+    expect(groq.length).toBeGreaterThan(0);
+  });
+
   it('embedding tem cascata de um elemento só', () => {
     // Cair para outro modelo de embedding produz vetores de outro espaço, que
     // não são comparáveis com os já indexados. A busca não falha: devolve
