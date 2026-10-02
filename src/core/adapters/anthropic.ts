@@ -14,10 +14,35 @@ function newAnthropicClient(apiKey: string, baseUrl?: string): Anthropic {
   return new Anthropic({ apiKey, baseURL: baseUrl, fetch: globalThis.fetch as any });
 }
 
-// A resposta real da API inclui cache_read_input_tokens (prompt caching),
-// mas os tipos estáveis desta versão do SDK ainda não expõem o campo — só
-// a superfície beta expõe. Runtime tem o campo, só o tipo não.
-type UsageWithCache = Anthropic.Usage & { cache_read_input_tokens?: number | null };
+// A resposta real da API inclui cache_read_input_tokens e
+// cache_creation_input_tokens (prompt caching), mas os tipos estáveis desta
+// versão do SDK ainda não expõem os campos — só a superfície beta expõe.
+// Runtime tem os campos, só o tipo não.
+type UsageWithCache = Anthropic.Usage & {
+  cache_read_input_tokens?: number | null;
+  cache_creation_input_tokens?: number | null;
+};
+
+/**
+ * Uso da Anthropic no formato da lib.
+ *
+ * `input_tokens` da API NÃO inclui nem o cache lido nem o gravado — são três
+ * contas separadas. O lido já ia para o coletor (`cachedTokens`); o gravado
+ * se perdia, e custa 1,25× a entrada. Medido no ContentSeller (02/10/2026):
+ * com cache ligado no agente, o coletor passou a mostrar US$ 0,009 por
+ * chamada quando a primeira da sequência, que grava ~55 mil tokens, custava
+ * ~US$ 0,21. Somar o gravado à entrada cobra a 1,0× em vez de 1,25× — erro de
+ * 25% sobre essa parcela, contra 100% antes —, sem mexer no coletor, que
+ * atende todos os produtos.
+ */
+export function usoDaAnthropic(u: UsageWithCache): Pick<TokenUsage, 'inputTokens' | 'cachedTokens' | 'cacheWriteTokens'> {
+  const gravados = u.cache_creation_input_tokens ?? 0;
+  return {
+    inputTokens: (u.input_tokens ?? 0) + gravados,
+    cachedTokens: u.cache_read_input_tokens ?? undefined,
+    ...(gravados > 0 ? { cacheWriteTokens: gravados } : {}),
+  };
+}
 
 export async function completeAnthropic(params: CompleteParams): Promise<CompletionResult> {
   const client = newAnthropicClient(params.apiKey, params.providerSpec?.baseUrl);
@@ -38,9 +63,8 @@ export async function completeAnthropic(params: CompleteParams): Promise<Complet
   return {
     text: textBlock?.text ?? '',
     usage: {
-      inputTokens: response.usage.input_tokens,
+      ...usoDaAnthropic(response.usage as UsageWithCache),
       outputTokens: response.usage.output_tokens,
-      cachedTokens: (response.usage as UsageWithCache).cache_read_input_tokens ?? undefined,
     },
     raw: response,
   };
@@ -82,8 +106,7 @@ export async function* streamAnthropic(
 
   for await (const event of stream) {
     if (event.type === 'message_start') {
-      usage.inputTokens = event.message.usage.input_tokens;
-      usage.cachedTokens = (event.message.usage as UsageWithCache).cache_read_input_tokens ?? undefined;
+      usage = { ...usage, ...usoDaAnthropic(event.message.usage as UsageWithCache) };
     }
     if (event.type === 'message_delta') {
       usage.outputTokens = event.usage.output_tokens;

@@ -29,6 +29,7 @@ export interface TokenUsage {
     inputTokens: number;
     outputTokens: number;
     cachedTokens?: number;
+    cacheWriteTokens?: number;
 }
 export interface CompletionResult {
     text: string;

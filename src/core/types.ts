@@ -83,9 +83,22 @@ export interface CompleteParams {
 }
 
 export interface TokenUsage {
+  /**
+   * Entrada cobrada a preço cheio OU acima dele. Na Anthropic inclui os tokens
+   * GRAVADOS no cache de prompt (`cache_creation_input_tokens`, 1,25× a
+   * entrada): o coletor não tem campo para escrita de cache, e sem somar aqui
+   * esse custo sumia do relatório inteiro (ver `usoDaAnthropic`).
+   */
   inputTokens: number;
   outputTokens: number;
+  /** Tokens LIDOS do cache (cobrados a ~10% da entrada). */
   cachedTokens?: number;
+  /**
+   * Quantos dos `inputTokens` foram gravações no cache. Informativo: já estão
+   * somados em `inputTokens`; existe para o coletor poder cobrá-los a 1,25×
+   * quando ganhar o campo.
+   */
+  cacheWriteTokens?: number;
 }
 
 export interface CompletionResult {
