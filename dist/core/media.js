@@ -32,8 +32,8 @@ async function generateImageRaw(params) {
 const cobradoPorMinuto = (model) => /whisper/i.test(model);
 async function transcribeRaw(params) {
     const client = params.provider === 'groq'
-        ? new groq_sdk_1.default({ apiKey: params.apiKey, ...fetchOpt })
-        : new openai_1.default({ apiKey: params.apiKey, ...fetchOpt });
+        ? new groq_sdk_1.default({ apiKey: params.apiKey })
+        : new openai_1.default({ apiKey: params.apiKey });
     const porMinuto = cobradoPorMinuto(params.model);
     const response = (await client.audio.transcriptions.create({
         file: params.file,

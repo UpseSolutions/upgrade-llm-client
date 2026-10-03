@@ -16,6 +16,8 @@ jest.mock('groq-sdk', () =>
   })),
 );
 
+import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 import { LLMClient } from '../client';
 
 const enviados: any[] = [];
@@ -76,6 +78,15 @@ describe('transcribe', () => {
     expect(enviados).toEqual([
       expect.objectContaining({ provider: 'groq', model: 'whisper-large-v3-turbo', audioSeconds: 42.5, success: true }),
     ]);
+  });
+
+  it('não força o fetch nativo: ele não sobe arquivo (falta `duplex`)', async () => {
+    groqTranscriptionsCreate.mockResolvedValue({ text: '', duration: 1 });
+    transcriptionsCreate.mockResolvedValue({ text: '', duration: 1 });
+    await llm().transcribe({ provider: 'groq', apiKey: 'x', model: 'whisper-large-v3-turbo', file: {}, feature: 'f' });
+    await llm().transcribe({ provider: 'openai', apiKey: 'x', model: 'whisper-1', file: {}, feature: 'f' });
+    expect((Groq as unknown as jest.Mock).mock.calls.at(-1)[0]).not.toHaveProperty('fetch');
+    expect((OpenAI as unknown as jest.Mock).mock.calls.at(-1)[0]).not.toHaveProperty('fetch');
   });
 
   it('modelo cobrado por token não recebe verbose_json, que ele recusa', async () => {
