@@ -144,7 +144,7 @@ describe('integridade do arquivo', () => {
   });
 
   it('cada produto do registro é um Product conhecido pela lib', () => {
-    const PRODUTOS = ['HADRIANS', 'GOLDANALYZER', 'ALFABETIA', 'AGENTEUP', 'CONTENTSELLER', 'EMAILSELLER'];
+    const PRODUTOS = ['HADRIANS', 'GOLDANALYZER', 'KOMPETENT', 'AGENTEUP', 'CONTENTSELLER', 'EMAILSELLER'];
     for (const produto of Object.keys(registry.products)) {
       expect(PRODUTOS).toContain(produto);
     }
