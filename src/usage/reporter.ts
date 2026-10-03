@@ -15,6 +15,8 @@ export interface UsageEvent {
   tokensCached?: number;
   /** Segundos de áudio transcrito — o Whisper é cobrado por minuto. */
   audioSeconds?: number;
+  /** Unidades do provedor (megapixel, segundo de vídeo, caractere). */
+  units?: number;
   costUsdEstimated?: number;
   latencyMs?: number;
   success: boolean;

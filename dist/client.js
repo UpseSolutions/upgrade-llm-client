@@ -115,17 +115,17 @@ class LLMClient {
         }
     }
     async generateImage(params) {
-        return this.medir(params, () => (0, media_1.generateImageRaw)(params), (r) => ({
+        return this.measure(params, () => (0, media_1.generateImageRaw)(params), (r) => ({
             ...(0, reporter_1.usageFromTokenUsage)(r.usage),
         }));
     }
     async transcribe(params) {
-        return this.medir(params, () => (0, media_1.transcribeRaw)(params), (r) => ({
+        return this.measure(params, () => (0, media_1.transcribeRaw)(params), (r) => ({
             ...(0, reporter_1.usageFromTokenUsage)(r.usage),
             audioSeconds: r.audioSeconds,
         }));
     }
-    async medir(params, chamar, consumo) {
+    async measure(params, chamar, consumo) {
         const startedAt = Date.now();
         try {
             const result = await chamar();
@@ -133,6 +133,8 @@ class LLMClient {
                 feature: params.feature,
                 provider: params.provider,
                 model: params.model,
+                tokensIn: 0,
+                tokensOut: 0,
                 ...consumo(result),
                 latencyMs: Date.now() - startedAt,
                 success: true,

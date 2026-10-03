@@ -7,6 +7,13 @@ export interface LLMClientConfig {
     collectorUrl?: string;
     collectorApiKey?: string;
 }
+export interface Consumo {
+    tokensIn?: number;
+    tokensOut?: number;
+    tokensCached?: number;
+    audioSeconds?: number;
+    units?: number;
+}
 export declare class LLMClient {
     private reporterConfig?;
     constructor(config: LLMClientConfig);
@@ -18,5 +25,9 @@ export declare class LLMClient {
     }>;
     generateImage(params: GenerateImageParams): Promise<ImageResult>;
     transcribe(params: TranscribeParams): Promise<TranscriptionResult>;
-    private medir;
+    measure<T>(params: {
+        feature: string;
+        provider: string;
+        model: string;
+    }, chamar: () => Promise<T>, consumo: (r: T) => Consumo): Promise<T>;
 }

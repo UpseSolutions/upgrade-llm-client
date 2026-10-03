@@ -1,4 +1,4 @@
-export { LLMClient, LLMClientConfig } from './client';
+export { LLMClient, LLMClientConfig, Consumo } from './client';
 export { FallbackConfig, FallbackStep, FallbackResult } from './fallback/cascade';
 export { isRetryable } from './fallback/isRetryable';
 export {
