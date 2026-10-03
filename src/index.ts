@@ -2,6 +2,12 @@ export { LLMClient, LLMClientConfig } from './client';
 export { FallbackConfig, FallbackStep, FallbackResult } from './fallback/cascade';
 export { isRetryable } from './fallback/isRetryable';
 export {
+  GenerateImageParams,
+  ImageResult,
+  TranscribeParams,
+  TranscriptionResult,
+} from './core/media';
+export {
   Provider,
   ProviderId,
   ProviderApi,

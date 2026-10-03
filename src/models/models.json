@@ -221,9 +221,18 @@
       "provider": "openai",
       "note": "Transcrição de áudio no alfabetia (routes/materiais.ts)."
     },
+    "gpt-image-1-mini": {
+      "provider": "openai",
+      "note": "Geração de imagem em contentseller e kompetent desde 03/10/2026, no lugar do dall-e-3. Devolve a imagem em base64 (não URL) e a usage em tokens.",
+      "price": {
+        "inputPerMTok": 2.0,
+        "outputPerMTok": 8.0,
+        "cachedPerMTok": 0.25
+      }
+    },
     "dall-e-3": {
       "provider": "openai",
-      "note": "Geração de imagem em contentseller e alfabetia."
+      "note": "DESLIGADO pela OpenAI em 12/05/2026 (404). Substituído por gpt-image-1-mini no papel imagem. Fica no catálogo só para evento antigo continuar identificável."
     },
     "gemini-2.0-flash": {
       "provider": "gemini",
@@ -364,7 +373,7 @@
     "imagem": {
       "description": "Geração de imagem.",
       "cascade": [
-        "dall-e-3"
+        "gpt-image-1-mini"
       ]
     }
   },
@@ -442,11 +451,6 @@
       "onde": "hadrians: ai_visibility_collector.py:168, brand_xray_service.py:141",
       "o_que": "gemini-2.0-flash foi DESLIGADO pelo Google (documentação de 08/09/2026: \"Previous models — Shut down\"). As chamadas estão falhando, e falhando em silêncio: o código captura a exceção, loga um warning e reporta success=false.",
       "risco": "Alto, e não é o preço: o produto de visibilidade de IA está sem dado do Gemini há um tempo indeterminado, e o cliente não sabe. A substituição é decisão de MOTOR MEDIDO — muda a linha de base —, mas hoje não há linha de base: não há medição."
-    },
-    "precoDeUnidadeNaoToken": {
-      "onde": "whisper-1 (alfabetia), dall-e-3 (contentseller e alfabetia)",
-      "o_que": "Não são cobrados por token — é por minuto de áudio e por imagem —, e a forma de preço do registro só sabe expressar USD por milhão de tokens.",
-      "risco": "Médio. Esse consumo nunca entra na conta, e inventar um número por token seria pior que a ausência, porque pareceria certo."
     }
   },
   "_sobrePrecos": [
@@ -467,10 +471,11 @@
     "ATENÇÃO ao id do provedor e do modelo: a busca de preço casa com o que o produto",
     "REPORTA, não com o nome bonito. Ver as notas de `gemini` e de `openai/gpt-oss-20b`.",
     "",
-    "whisper-1 e dall-e-3 ficam SEM preço de propósito: não são cobrados por token",
-    "(é por minuto de áudio e por imagem), e a forma acima não sabe expressar isso.",
-    "Inventar um número por token ali seria pior que a ausência, porque pareceria",
-    "certo. text-embedding-3-small é cobrado por token, mas o número não foi",
-    "conferido — fica sem preço até alguém confirmar na tabela da OpenAI."
+    "whisper-1 fica SEM preço aqui de propósito: é cobrado por minuto de áudio, que a",
+    "forma acima não expressa. O preço por minuto mora na tabela do coletor",
+    "(pricing.ts, perAudioMinute), e o produto reporta a duração em audioSeconds.",
+    "gpt-image-* é cobrado por token (o prompt é entrada, a imagem é saída) e cabe",
+    "aqui normalmente. text-embedding-3-small é cobrado por token, mas o número não",
+    "foi conferido — fica sem preço até alguém confirmar na tabela da OpenAI."
   ]
 }

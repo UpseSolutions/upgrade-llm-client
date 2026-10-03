@@ -11,6 +11,7 @@ export interface UsageEvent {
     tokensIn: number;
     tokensOut: number;
     tokensCached?: number;
+    audioSeconds?: number;
     costUsdEstimated?: number;
     latencyMs?: number;
     success: boolean;
