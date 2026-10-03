@@ -6,7 +6,7 @@ export interface ProviderSpec {
     baseUrl?: string;
     sdk?: 'groq';
 }
-export type Product = 'HADRIANS' | 'GOLDANALYZER' | 'ALFABETIA' | 'AGENTEUP' | 'CONTENTSELLER' | 'EMAILSELLER';
+export type Product = 'HADRIANS' | 'GOLDANALYZER' | 'KOMPETENT' | 'AGENTEUP' | 'CONTENTSELLER' | 'EMAILSELLER';
 export interface LLMMessage {
     role: 'user' | 'assistant';
     content: string | unknown[];

@@ -30,11 +30,11 @@ export interface ProviderSpec {
 export type Product =
   | 'HADRIANS'
   | 'GOLDANALYZER'
-  // ALFABETIA é o Kompetent (kompetent.com.br) desde o pivot de 15/08/2026;
-  // a AlfabetIA virou a vertical infantil dentro dele. O identificador não
-  // muda porque é a chave sob a qual o histórico de uso foi gravado —
-  // renomear partiria a série em duas. Ver o CLAUDE.md do repo alfabetia.
-  | 'ALFABETIA'
+  // Kompetent (kompetent.com.br), o antigo ALFABETIA — renomeado em
+  // 03/10/2026. O repositório e o projeto Docker seguem `alfabetia`; a
+  // AlfabetIA é a vertical infantil dentro do Kompetent. O coletor renomeou o
+  // valor no lugar, então o histórico anterior já aparece como KOMPETENT.
+  | 'KOMPETENT'
   | 'AGENTEUP'
   | 'CONTENTSELLER'
   | 'EMAILSELLER';
