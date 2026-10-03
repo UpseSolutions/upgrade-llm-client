@@ -4,6 +4,7 @@ exports.LLMClient = void 0;
 const complete_1 = require("./core/complete");
 const cascade_1 = require("./fallback/cascade");
 const reporter_1 = require("./usage/reporter");
+const media_1 = require("./core/media");
 class LLMClient {
     constructor(config) {
         if (config.collectorUrl && config.collectorApiKey) {
@@ -103,6 +104,47 @@ class LLMClient {
                 feature: params.feature,
                 provider: config.steps[0].provider,
                 model: config.steps[0].model,
+                tokensIn: 0,
+                tokensOut: 0,
+                latencyMs: Date.now() - startedAt,
+                success: false,
+                errorType: 'other',
+                streaming: false,
+            });
+            throw err;
+        }
+    }
+    async generateImage(params) {
+        return this.medir(params, () => (0, media_1.generateImageRaw)(params), (r) => ({
+            ...(0, reporter_1.usageFromTokenUsage)(r.usage),
+        }));
+    }
+    async transcribe(params) {
+        return this.medir(params, () => (0, media_1.transcribeRaw)(params), (r) => ({
+            ...(0, reporter_1.usageFromTokenUsage)(r.usage),
+            audioSeconds: r.audioSeconds,
+        }));
+    }
+    async medir(params, chamar, consumo) {
+        const startedAt = Date.now();
+        try {
+            const result = await chamar();
+            (0, reporter_1.reportUsage)(this.reporterConfig, {
+                feature: params.feature,
+                provider: params.provider,
+                model: params.model,
+                ...consumo(result),
+                latencyMs: Date.now() - startedAt,
+                success: true,
+                streaming: false,
+            });
+            return result;
+        }
+        catch (err) {
+            (0, reporter_1.reportUsage)(this.reporterConfig, {
+                feature: params.feature,
+                provider: params.provider,
+                model: params.model,
                 tokensIn: 0,
                 tokensOut: 0,
                 latencyMs: Date.now() - startedAt,

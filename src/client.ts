@@ -2,6 +2,14 @@ import { complete, completeStream } from './core/complete';
 import { completeWithFallback, FallbackConfig } from './fallback/cascade';
 import { CompleteParams, CompletionResult, TokenUsage } from './core/types';
 import { reportUsage, ReporterConfig, usageFromTokenUsage } from './usage/reporter';
+import {
+  generateImageRaw,
+  GenerateImageParams,
+  ImageResult,
+  transcribeRaw,
+  TranscribeParams,
+  TranscriptionResult,
+} from './core/media';
 
 export interface LLMClientConfig {
   product: ReporterConfig['product'];
@@ -120,6 +128,59 @@ export class LLMClient {
         feature: params.feature,
         provider: config.steps[0].provider,
         model: config.steps[0].model,
+        tokensIn: 0,
+        tokensOut: 0,
+        latencyMs: Date.now() - startedAt,
+        success: false,
+        errorType: 'other',
+        streaming: false,
+      });
+      throw err;
+    }
+  }
+
+  /** Gera uma imagem e reporta os tokens (prompt na entrada, imagem na saída). */
+  async generateImage(params: GenerateImageParams): Promise<ImageResult> {
+    return this.medir(params, () => generateImageRaw(params), (r) => ({
+      ...usageFromTokenUsage(r.usage),
+    }));
+  }
+
+  /**
+   * Transcreve áudio e reporta a DURAÇÃO — o Whisper é cobrado por minuto, e o
+   * coletor precifica por `audioSeconds`.
+   */
+  async transcribe(params: TranscribeParams): Promise<TranscriptionResult> {
+    return this.medir(params, () => transcribeRaw(params), (r) => ({
+      ...usageFromTokenUsage(r.usage),
+      audioSeconds: r.audioSeconds,
+    }));
+  }
+
+  /** O mesmo envelope do `complete`: reporta sucesso e falha, nunca engole erro. */
+  private async medir<T>(
+    params: { feature: string; provider: string; model: string },
+    chamar: () => Promise<T>,
+    consumo: (r: T) => { tokensIn: number; tokensOut: number; tokensCached?: number; audioSeconds?: number },
+  ): Promise<T> {
+    const startedAt = Date.now();
+    try {
+      const result = await chamar();
+      reportUsage(this.reporterConfig, {
+        feature: params.feature,
+        provider: params.provider,
+        model: params.model,
+        ...consumo(result),
+        latencyMs: Date.now() - startedAt,
+        success: true,
+        streaming: false,
+      });
+      return result;
+    } catch (err) {
+      reportUsage(this.reporterConfig, {
+        feature: params.feature,
+        provider: params.provider,
+        model: params.model,
         tokensIn: 0,
         tokensOut: 0,
         latencyMs: Date.now() - startedAt,

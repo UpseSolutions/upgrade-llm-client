@@ -1,6 +1,7 @@
 import { FallbackConfig } from './fallback/cascade';
 import { CompleteParams, CompletionResult } from './core/types';
 import { ReporterConfig } from './usage/reporter';
+import { GenerateImageParams, ImageResult, TranscribeParams, TranscriptionResult } from './core/media';
 export interface LLMClientConfig {
     product: ReporterConfig['product'];
     collectorUrl?: string;
@@ -15,4 +16,7 @@ export declare class LLMClient {
         providerUsed: string;
         fallbackTriggered: boolean;
     }>;
+    generateImage(params: GenerateImageParams): Promise<ImageResult>;
+    transcribe(params: TranscribeParams): Promise<TranscriptionResult>;
+    private medir;
 }
