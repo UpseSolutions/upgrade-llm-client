@@ -91,10 +91,16 @@ export async function generateImageRaw(params: GenerateImageParams): Promise<Ima
 const cobradoPorMinuto = (model: string) => /whisper/i.test(model);
 
 export async function transcribeRaw(params: TranscribeParams): Promise<TranscriptionResult> {
+  // SEM o fetch nativo que o resto da lib força. A transcrição é upload
+  // multipart, e o fetch nativo do Node recusa corpo em stream sem a opção
+  // `duplex`, que estes SDKs não passam: "Connection error. RequestInit:
+  // duplex option is required when sending a body" — com stream E com File.
+  // Medido em produção em 03/10/2026, logo depois de a transcrição do
+  // Kompetent passar pela lib. O fetch padrão do SDK sobe o arquivo.
   const client =
     params.provider === 'groq'
-      ? (new Groq({ apiKey: params.apiKey, ...fetchOpt }) as unknown as OpenAI)
-      : new OpenAI({ apiKey: params.apiKey, ...fetchOpt });
+      ? (new Groq({ apiKey: params.apiKey }) as unknown as OpenAI)
+      : new OpenAI({ apiKey: params.apiKey });
 
   const porMinuto = cobradoPorMinuto(params.model);
   const response = (await client.audio.transcriptions.create(
