@@ -21,6 +21,16 @@ export interface LLMClientConfig {
 
 // A lib nunca lê env var sozinha (ver plano) — tudo entra por parâmetro,
 // quem instancia decide de onde vêm as chaves.
+/** O que um provedor cobra por uma chamada. Ausente = 0. */
+export interface Consumo {
+  tokensIn?: number;
+  tokensOut?: number;
+  tokensCached?: number;
+  audioSeconds?: number;
+  /** Unidade do modelo no coletor: megapixel, segundo de vídeo, caractere. */
+  units?: number;
+}
+
 export class LLMClient {
   private reporterConfig?: ReporterConfig;
 
@@ -141,7 +151,7 @@ export class LLMClient {
 
   /** Gera uma imagem e reporta os tokens (prompt na entrada, imagem na saída). */
   async generateImage(params: GenerateImageParams): Promise<ImageResult> {
-    return this.medir(params, () => generateImageRaw(params), (r) => ({
+    return this.measure(params, () => generateImageRaw(params), (r) => ({
       ...usageFromTokenUsage(r.usage),
     }));
   }
@@ -151,17 +161,25 @@ export class LLMClient {
    * coletor precifica por `audioSeconds`.
    */
   async transcribe(params: TranscribeParams): Promise<TranscriptionResult> {
-    return this.medir(params, () => transcribeRaw(params), (r) => ({
+    return this.measure(params, () => transcribeRaw(params), (r) => ({
       ...usageFromTokenUsage(r.usage),
       audioSeconds: r.audioSeconds,
     }));
   }
 
-  /** O mesmo envelope do `complete`: reporta sucesso e falha, nunca engole erro. */
-  private async medir<T>(
+  /**
+   * Mede uma chamada a provedor que a lib não fala (fal, ElevenLabs...) e
+   * reporta o consumo ao coletor, no mesmo envelope do `complete`: reporta
+   * sucesso e falha, nunca engole erro, e o reporte nunca derruba a chamada.
+   *
+   * `consumo` diz o que o provedor cobra: tokens, segundos de áudio ou
+   * `units` — a unidade do modelo (megapixel, segundo de vídeo, caractere),
+   * que o coletor precifica pela tabela dele.
+   */
+  async measure<T>(
     params: { feature: string; provider: string; model: string },
     chamar: () => Promise<T>,
-    consumo: (r: T) => { tokensIn: number; tokensOut: number; tokensCached?: number; audioSeconds?: number },
+    consumo: (r: T) => Consumo,
   ): Promise<T> {
     const startedAt = Date.now();
     try {
@@ -170,6 +188,8 @@ export class LLMClient {
         feature: params.feature,
         provider: params.provider,
         model: params.model,
+        tokensIn: 0,
+        tokensOut: 0,
         ...consumo(result),
         latencyMs: Date.now() - startedAt,
         success: true,
