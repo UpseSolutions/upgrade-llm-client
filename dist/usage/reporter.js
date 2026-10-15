@@ -17,6 +17,8 @@ function usageFromTokenUsage(usage) {
         tokensIn: usage.inputTokens,
         tokensOut: usage.outputTokens,
         tokensCached: usage.cachedTokens,
+        ...(usage.cacheWrite5mTokens ? { tokensCacheWrite5m: usage.cacheWrite5mTokens } : {}),
+        ...(usage.cacheWrite1hTokens ? { tokensCacheWrite1h: usage.cacheWrite1hTokens } : {}),
     };
 }
 //# sourceMappingURL=reporter.js.map
