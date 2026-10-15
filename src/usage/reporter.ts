@@ -13,6 +13,9 @@ export interface UsageEvent {
   tokensIn: number;
   tokensOut: number;
   tokensCached?: number;
+  /** Gravados no cache de prompt, por duração — o coletor cobra 1,25× e 2× a entrada. */
+  tokensCacheWrite5m?: number;
+  tokensCacheWrite1h?: number;
   /** Segundos de áudio transcrito — o Whisper é cobrado por minuto. */
   audioSeconds?: number;
   /** Unidades do provedor (megapixel, segundo de vídeo, caractere). */
@@ -42,10 +45,14 @@ export function reportUsage(config: ReporterConfig | undefined, event: UsageEven
   });
 }
 
-export function usageFromTokenUsage(usage: TokenUsage): Pick<UsageEvent, 'tokensIn' | 'tokensOut' | 'tokensCached'> {
+export function usageFromTokenUsage(
+  usage: TokenUsage,
+): Pick<UsageEvent, 'tokensIn' | 'tokensOut' | 'tokensCached' | 'tokensCacheWrite5m' | 'tokensCacheWrite1h'> {
   return {
     tokensIn: usage.inputTokens,
     tokensOut: usage.outputTokens,
     tokensCached: usage.cachedTokens,
+    ...(usage.cacheWrite5mTokens ? { tokensCacheWrite5m: usage.cacheWrite5mTokens } : {}),
+    ...(usage.cacheWrite1hTokens ? { tokensCacheWrite1h: usage.cacheWrite1hTokens } : {}),
   };
 }

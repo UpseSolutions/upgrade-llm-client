@@ -21,26 +21,32 @@ function newAnthropicClient(apiKey: string, baseUrl?: string): Anthropic {
 type UsageWithCache = Anthropic.Usage & {
   cache_read_input_tokens?: number | null;
   cache_creation_input_tokens?: number | null;
+  // Por duração (documentação de prompt caching): a soma é cache_creation_input_tokens.
+  cache_creation?: { ephemeral_5m_input_tokens?: number | null; ephemeral_1h_input_tokens?: number | null } | null;
 };
 
 /**
  * Uso da Anthropic no formato da lib.
  *
  * `input_tokens` da API NÃO inclui nem o cache lido nem o gravado — são três
- * contas separadas. O lido já ia para o coletor (`cachedTokens`); o gravado
- * se perdia, e custa 1,25× a entrada. Medido no ContentSeller (02/10/2026):
- * com cache ligado no agente, o coletor passou a mostrar US$ 0,009 por
- * chamada quando a primeira da sequência, que grava ~55 mil tokens, custava
- * ~US$ 0,21. Somar o gravado à entrada cobra a 1,0× em vez de 1,25× — erro de
- * 25% sobre essa parcela, contra 100% antes —, sem mexer no coletor, que
- * atende todos os produtos.
+ * contas separadas. Até 02/10/2026 o gravado se perdia; de 02 a 15/10 ia somado
+ * à entrada (1,0×). Desde 15/10/2026 vai separado por duração — o coletor
+ * (`tokensCacheWrite5m`/`tokensCacheWrite1h`) cobra 1,25× e 2× a entrada. Com o
+ * cache de 1 hora no Seller (ContentSeller), somar à entrada erraria 50% nessa
+ * parcela. Sem o detalhe por duração (resposta antiga), tudo conta como 5 min.
  */
-export function usoDaAnthropic(u: UsageWithCache): Pick<TokenUsage, 'inputTokens' | 'cachedTokens' | 'cacheWriteTokens'> {
+export function usoDaAnthropic(
+  u: UsageWithCache,
+): Pick<TokenUsage, 'inputTokens' | 'cachedTokens' | 'cacheWriteTokens' | 'cacheWrite5mTokens' | 'cacheWrite1hTokens'> {
   const gravados = u.cache_creation_input_tokens ?? 0;
+  const uma = u.cache_creation?.ephemeral_1h_input_tokens ?? 0;
+  const cinco = u.cache_creation ? u.cache_creation.ephemeral_5m_input_tokens ?? 0 : gravados;
   return {
-    inputTokens: (u.input_tokens ?? 0) + gravados,
+    inputTokens: u.input_tokens ?? 0,
     cachedTokens: u.cache_read_input_tokens ?? undefined,
     ...(gravados > 0 ? { cacheWriteTokens: gravados } : {}),
+    ...(cinco > 0 ? { cacheWrite5mTokens: cinco } : {}),
+    ...(uma > 0 ? { cacheWrite1hTokens: uma } : {}),
   };
 }
 

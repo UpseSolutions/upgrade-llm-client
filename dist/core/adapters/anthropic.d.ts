@@ -3,8 +3,12 @@ import { CompleteParams, CompletionResult, TokenUsage } from '../types';
 type UsageWithCache = Anthropic.Usage & {
     cache_read_input_tokens?: number | null;
     cache_creation_input_tokens?: number | null;
+    cache_creation?: {
+        ephemeral_5m_input_tokens?: number | null;
+        ephemeral_1h_input_tokens?: number | null;
+    } | null;
 };
-export declare function usoDaAnthropic(u: UsageWithCache): Pick<TokenUsage, 'inputTokens' | 'cachedTokens' | 'cacheWriteTokens'>;
+export declare function usoDaAnthropic(u: UsageWithCache): Pick<TokenUsage, 'inputTokens' | 'cachedTokens' | 'cacheWriteTokens' | 'cacheWrite5mTokens' | 'cacheWrite1hTokens'>;
 export declare function completeAnthropic(params: CompleteParams): Promise<CompletionResult>;
 export interface StreamResult {
     usage: TokenUsage;

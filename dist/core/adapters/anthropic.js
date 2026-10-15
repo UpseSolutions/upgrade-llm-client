@@ -12,10 +12,14 @@ function newAnthropicClient(apiKey, baseUrl) {
 }
 function usoDaAnthropic(u) {
     const gravados = u.cache_creation_input_tokens ?? 0;
+    const uma = u.cache_creation?.ephemeral_1h_input_tokens ?? 0;
+    const cinco = u.cache_creation ? u.cache_creation.ephemeral_5m_input_tokens ?? 0 : gravados;
     return {
-        inputTokens: (u.input_tokens ?? 0) + gravados,
+        inputTokens: u.input_tokens ?? 0,
         cachedTokens: u.cache_read_input_tokens ?? undefined,
         ...(gravados > 0 ? { cacheWriteTokens: gravados } : {}),
+        ...(cinco > 0 ? { cacheWrite5mTokens: cinco } : {}),
+        ...(uma > 0 ? { cacheWrite1hTokens: uma } : {}),
     };
 }
 async function completeAnthropic(params) {

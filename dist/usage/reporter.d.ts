@@ -11,6 +11,8 @@ export interface UsageEvent {
     tokensIn: number;
     tokensOut: number;
     tokensCached?: number;
+    tokensCacheWrite5m?: number;
+    tokensCacheWrite1h?: number;
     audioSeconds?: number;
     units?: number;
     costUsdEstimated?: number;
@@ -22,4 +24,4 @@ export interface UsageEvent {
     streaming?: boolean;
 }
 export declare function reportUsage(config: ReporterConfig | undefined, event: UsageEvent): void;
-export declare function usageFromTokenUsage(usage: TokenUsage): Pick<UsageEvent, 'tokensIn' | 'tokensOut' | 'tokensCached'>;
+export declare function usageFromTokenUsage(usage: TokenUsage): Pick<UsageEvent, 'tokensIn' | 'tokensOut' | 'tokensCached' | 'tokensCacheWrite5m' | 'tokensCacheWrite1h'>;
