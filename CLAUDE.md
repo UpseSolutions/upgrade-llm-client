@@ -26,6 +26,26 @@ Quem chama já sabe o formato do provedor que escolheu.
 `.tsbuildinfo` faz o tsc achar que está tudo em dia e emitir quase nada. Apague
 o `*.tsbuildinfo` junto.
 
+## Reserva da Anthropic (31/10/2026)
+
+Duas contas: a principal e a reserva (`ANTHROPIC_API_KEY_BACKUP` no ambiente de
+cada produto). Veio do GoldAnalyzer, que segue com a própria cópia em
+`common/llm-com-reserva.ts`. O produto liga uma vez, na subida de CADA processo
+(API e worker):
+
+```ts
+configurarReservaAnthropic({
+  principal: process.env.ANTHROPIC_API_KEY,
+  reserva: process.env.ANTHROPIC_API_KEY_BACKUP,
+})
+```
+
+Vale para `complete`, `completeStream` e `completeWithFallback`, sem mudar quem
+chama. Só `credit balance` aciona a reserva. Chave própria de cliente nunca cai
+nela. As duas sem crédito: pausa de 15 min, e o erro mantém "credit balance"
+porque é o que aciona o Groq nos produtos. Freio por feature só na reserva:
+60 chamadas por hora, salvo `limitePorHora`.
+
 ## O registro de modelos (`src/models/models.json`)
 
 Fonte da verdade de qual modelo cada papel usa, em todo o portfólio. Criado em

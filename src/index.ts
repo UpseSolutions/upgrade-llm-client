@@ -2,6 +2,13 @@ export { LLMClient, LLMClientConfig, Consumo } from './client';
 export { FallbackConfig, FallbackStep, FallbackResult } from './fallback/cascade';
 export { isRetryable } from './fallback/isRetryable';
 export {
+  ReservaAnthropic,
+  configurarReservaAnthropic,
+  semCredito,
+  LIMITE_POR_HORA_PADRAO,
+  PAUSA_SEM_CREDITO_MS,
+} from './core/reserva';
+export {
   GenerateImageParams,
   ImageResult,
   TranscribeParams,

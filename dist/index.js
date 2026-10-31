@@ -1,10 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.redefinirRegistro = exports.registroAtual = exports.fonteDoRegistro = exports.carregarRegistro = exports.providerSpecDe = exports.REGISTRY_VERSION = exports.registryVersion = exports.providerIds = exports.roles = exports.modelPrice = exports.modelCatalog = exports.providerSpecOf = exports.envKeyOf = exports.requiredEnvKeys = exports.resolveRole = exports.isRetryable = exports.LLMClient = void 0;
+exports.redefinirRegistro = exports.registroAtual = exports.fonteDoRegistro = exports.carregarRegistro = exports.providerSpecDe = exports.REGISTRY_VERSION = exports.registryVersion = exports.providerIds = exports.roles = exports.modelPrice = exports.modelCatalog = exports.providerSpecOf = exports.envKeyOf = exports.requiredEnvKeys = exports.resolveRole = exports.PAUSA_SEM_CREDITO_MS = exports.LIMITE_POR_HORA_PADRAO = exports.semCredito = exports.configurarReservaAnthropic = exports.isRetryable = exports.LLMClient = void 0;
 var client_1 = require("./client");
 Object.defineProperty(exports, "LLMClient", { enumerable: true, get: function () { return client_1.LLMClient; } });
 var isRetryable_1 = require("./fallback/isRetryable");
 Object.defineProperty(exports, "isRetryable", { enumerable: true, get: function () { return isRetryable_1.isRetryable; } });
+var reserva_1 = require("./core/reserva");
+Object.defineProperty(exports, "configurarReservaAnthropic", { enumerable: true, get: function () { return reserva_1.configurarReservaAnthropic; } });
+Object.defineProperty(exports, "semCredito", { enumerable: true, get: function () { return reserva_1.semCredito; } });
+Object.defineProperty(exports, "LIMITE_POR_HORA_PADRAO", { enumerable: true, get: function () { return reserva_1.LIMITE_POR_HORA_PADRAO; } });
+Object.defineProperty(exports, "PAUSA_SEM_CREDITO_MS", { enumerable: true, get: function () { return reserva_1.PAUSA_SEM_CREDITO_MS; } });
 var registry_1 = require("./models/registry");
 Object.defineProperty(exports, "resolveRole", { enumerable: true, get: function () { return registry_1.resolveRole; } });
 Object.defineProperty(exports, "requiredEnvKeys", { enumerable: true, get: function () { return registry_1.requiredEnvKeys; } });

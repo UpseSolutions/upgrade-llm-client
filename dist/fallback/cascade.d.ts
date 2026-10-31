@@ -1,3 +1,4 @@
+import { complete } from '../core/complete';
 import { CompleteParams, CompletionResult, ProviderId, ProviderSpec } from '../core/types';
 export interface FallbackStep {
     provider: ProviderId;
@@ -15,4 +16,4 @@ export interface FallbackResult extends CompletionResult {
     fallbackTriggered: boolean;
     fallbackFromProvider?: ProviderId;
 }
-export declare function completeWithFallback(config: FallbackConfig, params: Omit<CompleteParams, 'provider' | 'apiKey' | 'model'>): Promise<FallbackResult>;
+export declare function completeWithFallback(config: FallbackConfig, params: Omit<CompleteParams, 'provider' | 'apiKey' | 'model'>, chamar?: typeof complete): Promise<FallbackResult>;
