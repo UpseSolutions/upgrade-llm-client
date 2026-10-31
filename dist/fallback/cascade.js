@@ -2,8 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.completeWithFallback = completeWithFallback;
 const complete_1 = require("../core/complete");
+const reserva_1 = require("../core/reserva");
 const isRetryable_1 = require("./isRetryable");
-async function completeWithFallback(config, params) {
+async function completeWithFallback(config, params, chamar = complete_1.complete) {
     if (config.steps.length === 0) {
         throw new Error(`FallbackConfig "${config.useCase}" não tem nenhum step configurado`);
     }
@@ -11,7 +12,7 @@ async function completeWithFallback(config, params) {
     for (let i = 0; i < config.steps.length; i++) {
         const step = config.steps[i];
         try {
-            const result = await (0, complete_1.complete)({
+            const result = await chamar({
                 ...params,
                 provider: step.provider,
                 apiKey: step.apiKey,
@@ -29,7 +30,7 @@ async function completeWithFallback(config, params) {
         catch (err) {
             lastError = err;
             const isLastStep = i === config.steps.length - 1;
-            if (!(0, isRetryable_1.isRetryable)(err) || isLastStep)
+            if (!((0, isRetryable_1.isRetryable)(err) || (0, reserva_1.semCredito)(err)) || isLastStep)
                 throw err;
         }
     }

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LLMClient = void 0;
 const complete_1 = require("./core/complete");
 const cascade_1 = require("./fallback/cascade");
+const reserva_1 = require("./core/reserva");
 const reporter_1 = require("./usage/reporter");
 const media_1 = require("./core/media");
 class LLMClient {
@@ -16,6 +17,9 @@ class LLMClient {
         }
     }
     async complete(params) {
+        return (0, reserva_1.comReserva)(params, (p) => this.completeUmaVez(p));
+    }
+    async completeUmaVez(params) {
         const startedAt = Date.now();
         try {
             const result = await (0, complete_1.complete)(params);
@@ -46,6 +50,17 @@ class LLMClient {
         }
     }
     async *completeStream(params) {
+        const { stream, primeiro } = await (0, reserva_1.comReserva)(params, async (p) => {
+            const stream = this.streamUmaVez(p);
+            return { stream, primeiro: await stream.next() };
+        });
+        let next = primeiro;
+        while (!next.done) {
+            yield next.value;
+            next = await stream.next();
+        }
+    }
+    async *streamUmaVez(params) {
         const startedAt = Date.now();
         let usage = { inputTokens: 0, outputTokens: 0 };
         try {
@@ -85,7 +100,7 @@ class LLMClient {
     async completeWithFallback(config, params) {
         const startedAt = Date.now();
         try {
-            const result = await (0, cascade_1.completeWithFallback)(config, params);
+            const result = await (0, cascade_1.completeWithFallback)(config, params, (p) => (0, reserva_1.comReserva)(p, complete_1.complete));
             (0, reporter_1.reportUsage)(this.reporterConfig, {
                 feature: params.feature,
                 provider: result.providerUsed,

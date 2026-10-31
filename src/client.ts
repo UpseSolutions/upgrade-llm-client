@@ -1,6 +1,7 @@
 import { complete, completeStream } from './core/complete';
 import { completeWithFallback, FallbackConfig } from './fallback/cascade';
 import { CompleteParams, CompletionResult, TokenUsage } from './core/types';
+import { comReserva } from './core/reserva';
 import { reportUsage, ReporterConfig, usageFromTokenUsage } from './usage/reporter';
 import {
   generateImageRaw,
@@ -45,6 +46,10 @@ export class LLMClient {
   }
 
   async complete(params: CompleteParams): Promise<CompletionResult> {
+    return comReserva(params, (p) => this.completeUmaVez(p));
+  }
+
+  private async completeUmaVez(params: CompleteParams): Promise<CompletionResult> {
     const startedAt = Date.now();
     try {
       const result = await complete(params);
@@ -77,7 +82,22 @@ export class LLMClient {
   // Passthrough puro — cada chunk nativo do provedor é repassado sem
   // alteração, na mesma ordem, assim que chega. Só ao final (stream
   // esgotado ou erro) é que o reporte de uso dispara.
+  //
+  // A reserva só cobre a abertura: a recusa por saldo chega antes do primeiro
+  // pedaço. Repetir depois disso mandaria o começo da resposta duas vezes.
   async *completeStream(params: CompleteParams): AsyncGenerator<unknown, void, void> {
+    const { stream, primeiro } = await comReserva(params, async (p) => {
+      const stream = this.streamUmaVez(p);
+      return { stream, primeiro: await stream.next() };
+    });
+    let next = primeiro;
+    while (!next.done) {
+      yield next.value;
+      next = await stream.next();
+    }
+  }
+
+  private async *streamUmaVez(params: CompleteParams): AsyncGenerator<unknown, void, void> {
     const startedAt = Date.now();
     let usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
     try {
@@ -120,7 +140,7 @@ export class LLMClient {
   ): Promise<CompletionResult & { providerUsed: string; fallbackTriggered: boolean }> {
     const startedAt = Date.now();
     try {
-      const result = await completeWithFallback(config, params);
+      const result = await completeWithFallback(config, params, (p) => comReserva(p, complete));
       reportUsage(this.reporterConfig, {
         feature: params.feature,
         provider: result.providerUsed,

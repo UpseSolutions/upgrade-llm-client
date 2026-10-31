@@ -1,5 +1,6 @@
 import { complete } from '../core/complete';
 import { CompleteParams, CompletionResult, ProviderId, ProviderSpec } from '../core/types';
+import { semCredito } from '../core/reserva';
 import { isRetryable } from './isRetryable';
 
 export interface FallbackStep {
@@ -28,10 +29,12 @@ export interface FallbackResult extends CompletionResult {
 // Um hop por camada: tenta step[0], se for erro retryable tenta step[1], e
 // assim por diante. Erro não-retryable (ex: 400 de validação) propaga
 // imediatamente, sem passar pros próximos steps — cascata existe pra
-// indisponibilidade de provedor, não pra mascarar bug de request.
+// indisponibilidade de provedor, não pra mascarar bug de request. Falta de
+// crédito vem como 400, mas é indisponibilidade: o pedido está certo.
 export async function completeWithFallback(
   config: FallbackConfig,
   params: Omit<CompleteParams, 'provider' | 'apiKey' | 'model'>,
+  chamar: typeof complete = complete,
 ): Promise<FallbackResult> {
   if (config.steps.length === 0) {
     throw new Error(`FallbackConfig "${config.useCase}" não tem nenhum step configurado`);
@@ -42,7 +45,7 @@ export async function completeWithFallback(
   for (let i = 0; i < config.steps.length; i++) {
     const step = config.steps[i];
     try {
-      const result = await complete({
+      const result = await chamar({
         ...params,
         provider: step.provider,
         apiKey: step.apiKey,
@@ -59,7 +62,7 @@ export async function completeWithFallback(
     } catch (err) {
       lastError = err;
       const isLastStep = i === config.steps.length - 1;
-      if (!isRetryable(err) || isLastStep) throw err;
+      if (!(isRetryable(err) || semCredito(err)) || isLastStep) throw err;
     }
   }
 

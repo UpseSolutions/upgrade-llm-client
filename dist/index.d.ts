@@ -1,6 +1,7 @@
 export { LLMClient, LLMClientConfig, Consumo } from './client';
 export { FallbackConfig, FallbackStep, FallbackResult } from './fallback/cascade';
 export { isRetryable } from './fallback/isRetryable';
+export { ReservaAnthropic, configurarReservaAnthropic, fetchComReservaAnthropic, FEATURE_SDK_DIRETO, semCredito, LIMITE_POR_HORA_PADRAO, PAUSA_SEM_CREDITO_MS, } from './core/reserva';
 export { GenerateImageParams, ImageResult, TranscribeParams, TranscriptionResult, } from './core/media';
 export { Provider, ProviderId, ProviderApi, ProviderSpec, Product, LLMMessage, CompleteParams, CompletionResult, TokenUsage, } from './core/types';
 export { Role, ResolvedModel, CatalogEntry, resolveRole, requiredEnvKeys, envKeyOf, providerSpecOf, modelCatalog, modelPrice, ModelPrice, roles, providerIds, registryVersion, REGISTRY_VERSION, } from './models/registry';

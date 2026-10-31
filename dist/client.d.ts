@@ -18,7 +18,9 @@ export declare class LLMClient {
     private reporterConfig?;
     constructor(config: LLMClientConfig);
     complete(params: CompleteParams): Promise<CompletionResult>;
+    private completeUmaVez;
     completeStream(params: CompleteParams): AsyncGenerator<unknown, void, void>;
+    private streamUmaVez;
     completeWithFallback(config: FallbackConfig, params: Omit<CompleteParams, 'provider' | 'apiKey' | 'model'>): Promise<CompletionResult & {
         providerUsed: string;
         fallbackTriggered: boolean;
