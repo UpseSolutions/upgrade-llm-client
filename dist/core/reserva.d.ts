@@ -10,3 +10,5 @@ export declare const LIMITE_POR_HORA_PADRAO = 60;
 export declare function configurarReservaAnthropic(novo: ReservaAnthropic | null): void;
 export declare function semCredito(err: unknown): boolean;
 export declare function comReserva<T>(params: CompleteParams, chamar: (p: CompleteParams) => Promise<T>): Promise<T>;
+export declare const FEATURE_SDK_DIRETO = "sdk_direto";
+export declare const fetchComReservaAnthropic: typeof fetch;

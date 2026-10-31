@@ -4,6 +4,7 @@ import {
   LIMITE_POR_HORA_PADRAO,
   PAUSA_SEM_CREDITO_MS,
   configurarReservaAnthropic,
+  fetchComReservaAnthropic,
   semCredito,
 } from '../core/reserva';
 import { CompleteParams, StreamCompletionResult } from '../core/types';
@@ -182,5 +183,66 @@ describe('reserva da Anthropic', () => {
   it('semCredito reconhece só a recusa por saldo', () => {
     expect(semCredito(SEM_CREDITO)).toBe(true);
     expect(semCredito(new Error('overloaded'))).toBe(false);
+  });
+});
+
+describe('fetchComReservaAnthropic', () => {
+  const CORPO = JSON.stringify({ type: 'error', error: { message: 'Your credit balance is too low to access the Anthropic API.' } });
+  const original = global.fetch;
+  let chaves: (string | null)[];
+
+  function respostaPara(semSaldo: string[]) {
+    global.fetch = jest.fn(async (_url, init) => {
+      const chave = new Headers(init?.headers).get('x-api-key');
+      chaves.push(chave);
+      return semSaldo.includes(chave!) ? new Response(CORPO, { status: 400 }) : new Response('{"ok":true}', { status: 200 });
+    }) as typeof fetch;
+  }
+  const chamar = (chave = 'principal') =>
+    fetchComReservaAnthropic('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': chave } });
+
+  beforeEach(() => {
+    chaves = [];
+    configurarReservaAnthropic({ principal: 'principal', reserva: 'reserva', aviso: () => {} });
+  });
+  afterEach(() => {
+    global.fetch = original;
+    configurarReservaAnthropic(null);
+  });
+
+  it('sem crédito, repete com a reserva e as próximas vão direto nela', async () => {
+    respostaPara(['principal']);
+    expect((await chamar()).status).toBe(200);
+    await chamar();
+    expect(chaves).toEqual(['principal', 'reserva', 'reserva']);
+  });
+
+  it('outro 400 volta como está, sem gastar a reserva', async () => {
+    global.fetch = jest.fn(async () => {
+      chaves.push('x');
+      return new Response('{"error":{"message":"max_tokens inválido"}}', { status: 400 });
+    }) as typeof fetch;
+    expect((await chamar()).status).toBe(400);
+    expect(chaves).toEqual(['x']);
+  });
+
+  it('chave de cliente não cai na reserva', async () => {
+    respostaPara(['do-cliente']);
+    expect((await chamar('do-cliente')).status).toBe(400);
+    expect(chaves).toEqual(['do-cliente']);
+  });
+
+  it('as duas sem crédito: a recusa chega como 400, que o SDK não repete', async () => {
+    respostaPara(['principal', 'reserva']);
+    expect((await chamar()).status).toBe(400);
+    const pausada = await chamar();
+    expect(pausada.status).toBe(400);
+    expect(await pausada.text()).toContain('credit balance');
+    expect(chaves).toEqual(['principal', 'reserva']);
+  });
+
+  it('falha de rede sobe como falha de rede', async () => {
+    global.fetch = jest.fn(async () => { throw new TypeError('fetch failed'); }) as typeof fetch;
+    await expect(chamar()).rejects.toThrow('fetch failed');
   });
 });

@@ -46,6 +46,9 @@ nela. As duas sem crédito: pausa de 15 min, e o erro mantém "credit balance"
 porque é o que aciona o Groq nos produtos. Freio por feature só na reserva:
 60 chamadas por hora, salvo `limitePorHora`.
 
+Quem usa o SDK da Anthropic direto passa `fetch: fetchComReservaAnthropic` no
+construtor e entra na mesma regra, inclusive em `messages.stream`.
+
 ## O registro de modelos (`src/models/models.json`)
 
 Fonte da verdade de qual modelo cada papel usa, em todo o portfólio. Criado em

@@ -4,6 +4,8 @@ export { isRetryable } from './fallback/isRetryable';
 export {
   ReservaAnthropic,
   configurarReservaAnthropic,
+  fetchComReservaAnthropic,
+  FEATURE_SDK_DIRETO,
   semCredito,
   LIMITE_POR_HORA_PADRAO,
   PAUSA_SEM_CREDITO_MS,

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LIMITE_POR_HORA_PADRAO = exports.PAUSA_SEM_CREDITO_MS = void 0;
+exports.fetchComReservaAnthropic = exports.FEATURE_SDK_DIRETO = exports.LIMITE_POR_HORA_PADRAO = exports.PAUSA_SEM_CREDITO_MS = void 0;
 exports.configurarReservaAnthropic = configurarReservaAnthropic;
 exports.semCredito = semCredito;
 exports.comReserva = comReserva;
@@ -21,6 +21,8 @@ function semCredito(err) {
     const msg = `${e?.message ?? ''} ${e?.error?.error?.message ?? ''}`.toLowerCase();
     return msg.includes('credit balance');
 }
+class RecusaLocal extends Error {
+}
 function avisar(mensagem) {
     (config?.aviso ?? console.error)(`[llm-client] ${mensagem}`);
 }
@@ -34,7 +36,7 @@ function naReserva(params) {
             lista.push(agora);
             avisar(`${params.feature} passou de ${limite} chamadas por hora na reserva da Anthropic. Chamada em laço?`);
         }
-        throw new Error(`limite de ${limite} chamadas de IA por hora na reserva (${params.feature})`);
+        throw new RecusaLocal(`limite de ${limite} chamadas de IA por hora na reserva (${params.feature})`);
     }
     lista.push(agora);
     return { ...params, apiKey: config.reserva };
@@ -45,7 +47,7 @@ function escolher(params) {
     if (Date.now() >= principalSemCreditoAte)
         return params;
     if (Date.now() < reservaSemCreditoAte)
-        throw new Error('Anthropic sem crédito (credit balance) nas duas contas, pausado');
+        throw new RecusaLocal('Anthropic sem crédito (credit balance) nas duas contas, pausado');
     return naReserva(params);
 }
 function depoisDaRecusa(usados, err) {
@@ -83,4 +85,37 @@ async function comReserva(params, chamar) {
         }
     }
 }
+class RecusaPorSaldo extends Error {
+    constructor(resposta, corpo) {
+        super(corpo);
+        this.resposta = resposta;
+    }
+}
+exports.FEATURE_SDK_DIRETO = 'sdk_direto';
+const fetchComReservaAnthropic = async (url, init) => {
+    const cabecalhos = new Headers(init?.headers);
+    const base = {
+        provider: 'anthropic', apiKey: cabecalhos.get('x-api-key') ?? '', model: '', messages: [], maxTokens: 0, feature: exports.FEATURE_SDK_DIRETO,
+    };
+    try {
+        return await comReserva(base, async (p) => {
+            cabecalhos.set('x-api-key', p.apiKey);
+            const resposta = await fetch(url, { ...init, headers: cabecalhos });
+            if (resposta.status !== 400)
+                return resposta;
+            const corpo = await resposta.clone().text();
+            if (semCredito(new Error(corpo)))
+                throw new RecusaPorSaldo(resposta, corpo);
+            return resposta;
+        });
+    }
+    catch (err) {
+        if (err instanceof RecusaPorSaldo)
+            return err.resposta;
+        if (!(err instanceof RecusaLocal))
+            throw err;
+        return new Response(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: err.message } }), { status: 400, headers: { 'content-type': 'application/json' } });
+    }
+};
+exports.fetchComReservaAnthropic = fetchComReservaAnthropic;
 //# sourceMappingURL=reserva.js.map

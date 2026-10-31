@@ -53,6 +53,9 @@ export function semCredito(err: unknown): boolean {
   return msg.includes('credit balance');
 }
 
+/** Recusa da própria lib, sem ida à rede: pausa das duas contas ou freio de gasto. */
+class RecusaLocal extends Error {}
+
 function avisar(mensagem: string): void {
   (config?.aviso ?? console.error)(`[llm-client] ${mensagem}`);
 }
@@ -67,7 +70,7 @@ function naReserva(params: CompleteParams): CompleteParams {
       lista.push(agora); // avisa uma vez só, até a janela esvaziar
       avisar(`${params.feature} passou de ${limite} chamadas por hora na reserva da Anthropic. Chamada em laço?`);
     }
-    throw new Error(`limite de ${limite} chamadas de IA por hora na reserva (${params.feature})`);
+    throw new RecusaLocal(`limite de ${limite} chamadas de IA por hora na reserva (${params.feature})`);
   }
   lista.push(agora);
   return { ...params, apiKey: config!.reserva! };
@@ -78,7 +81,7 @@ function escolher(params: CompleteParams): CompleteParams {
   if (Date.now() >= principalSemCreditoAte) return params;
   // As duas sem crédito: nem chama. A mensagem mantém "credit balance" porque é
   // ela que aciona o Groq nos produtos que têm esse caminho.
-  if (Date.now() < reservaSemCreditoAte) throw new Error('Anthropic sem crédito (credit balance) nas duas contas, pausado');
+  if (Date.now() < reservaSemCreditoAte) throw new RecusaLocal('Anthropic sem crédito (credit balance) nas duas contas, pausado');
   return naReserva(params);
 }
 
@@ -117,3 +120,42 @@ export async function comReserva<T>(params: CompleteParams, chamar: (p: Complete
     }
   }
 }
+
+class RecusaPorSaldo extends Error {
+  constructor(readonly resposta: Response, corpo: string) {
+    super(corpo);
+  }
+}
+
+/** Nome do freio de quem usa o SDK direto: o `fetch` não sabe qual recurso chamou. */
+export const FEATURE_SDK_DIRETO = 'sdk_direto';
+
+/**
+ * Para quem usa o SDK da Anthropic direto: `new Anthropic({ apiKey, fetch: fetchComReservaAnthropic })`.
+ * Mesma regra, pausa e freio do LLMClient, e cobre `messages.stream` sem mudar quem
+ * chama, porque a recusa por saldo vem antes do primeiro byte. Recusa local volta
+ * como 400: um erro lançado aqui o SDK trataria como falha de rede e repetiria.
+ */
+export const fetchComReservaAnthropic: typeof fetch = async (url, init) => {
+  const cabecalhos = new Headers(init?.headers);
+  const base: CompleteParams = {
+    provider: 'anthropic', apiKey: cabecalhos.get('x-api-key') ?? '', model: '', messages: [], maxTokens: 0, feature: FEATURE_SDK_DIRETO,
+  };
+  try {
+    return await comReserva(base, async (p) => {
+      cabecalhos.set('x-api-key', p.apiKey);
+      const resposta = await fetch(url, { ...init, headers: cabecalhos });
+      if (resposta.status !== 400) return resposta;
+      const corpo = await resposta.clone().text();
+      if (semCredito(new Error(corpo))) throw new RecusaPorSaldo(resposta, corpo);
+      return resposta;
+    });
+  } catch (err) {
+    if (err instanceof RecusaPorSaldo) return err.resposta;
+    if (!(err instanceof RecusaLocal)) throw err;
+    return new Response(
+      JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: err.message } }),
+      { status: 400, headers: { 'content-type': 'application/json' } },
+    );
+  }
+};
