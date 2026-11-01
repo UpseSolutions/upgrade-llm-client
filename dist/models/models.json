@@ -1,6 +1,6 @@
 {
-    "version": 5,
-    "updatedAt": "2026-09-10",
+    "version": 6,
+    "updatedAt": "2026-11-01",
     "_leiaMe": [
         "Registro central de modelos do portfólio Upgrade Soluções.",
         "",
@@ -279,6 +279,18 @@
                 "cachedPerMTok": 0.075
             },
             "note": "Irmão maior do 20b, mesma licença Apache-2.0 e mesmo detalhe do prefixo."
+        },
+        "qwen/qwen3.8-27b": {
+            "provider": "groq",
+            "price": {
+                "inputPerMTok": 0.8,
+                "outputPerMTok": 4
+            },
+            "note": [
+                "Último recurso do atendimento do AgenteUP, com as outras contas sem crédito.",
+                "Em 01/11/2026 passou nos 7 casos da demonstração e na chamada de ferramenta.",
+                "O gpt-oss-120b não indicou médico no caso de saúde; este indicou."
+            ]
         }
     },
     "roles": {
@@ -383,9 +395,10 @@
                 "conversa": {
                     "cascade": [
                         "gpt-4o",
-                        "gpt-4o-mini"
+                        "gpt-4o-mini",
+                        "qwen/qwen3.8-27b"
                     ],
-                    "reason": "O atendimento ao lead roda em gpt-4o desde antes do registro existir. Mantido idêntico para a migração não mudar comportamento; consolidar em claude-sonnet-5 é decisão à parte, com o custo medido antes."
+                    "reason": "O atendimento ao lead roda em gpt-4o desde antes do registro existir. Mantido idêntico para a migração não mudar comportamento; consolidar em claude-sonnet-5 é decisão à parte, com o custo medido antes. O Qwen fecha a cascata: é o último recurso sem crédito nas contas pagas, testado em 01/11/2026."
                 }
             }
         },

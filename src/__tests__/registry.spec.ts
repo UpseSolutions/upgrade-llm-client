@@ -250,7 +250,7 @@ describe('requiredEnvKeys', () => {
   });
 
   it('não repete quando a cascata inteira é do mesmo provedor', () => {
-    expect(requiredEnvKeys('conversa', 'AGENTEUP')).toEqual(['OPENAI_API_KEY']);
+    expect(requiredEnvKeys('conversa', 'AGENTEUP')).toEqual(['OPENAI_API_KEY', 'GROQ_API_KEY']);
   });
 });
 
