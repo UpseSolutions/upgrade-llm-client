@@ -4,6 +4,6 @@ export { isRetryable } from './fallback/isRetryable';
 export { ReservaAnthropic, configurarReservaAnthropic, fetchComReservaAnthropic, FEATURE_SDK_DIRETO, semCredito, LIMITE_POR_HORA_PADRAO, PAUSA_SEM_CREDITO_MS, } from './core/reserva';
 export { GenerateImageParams, ImageResult, TranscribeParams, TranscriptionResult, } from './core/media';
 export { Provider, ProviderId, ProviderApi, ProviderSpec, Product, LLMMessage, CompleteParams, CompletionResult, TokenUsage, } from './core/types';
-export { Role, ResolvedModel, CatalogEntry, resolveRole, requiredEnvKeys, envKeyOf, providerSpecOf, modelCatalog, modelPrice, ModelPrice, roles, providerIds, registryVersion, REGISTRY_VERSION, } from './models/registry';
+export { Role, ResolvedModel, CatalogEntry, LinhaDoBoletim, resolveRole, requiredEnvKeys, passosDoPapel, envKeyOf, providerSpecOf, modelCatalog, modelPrice, ModelPrice, roles, providerIds, registryVersion, REGISTRY_VERSION, } from './models/registry';
 export { providerSpecDe } from './core/complete';
 export { carregarRegistro, fonteDoRegistro, registroAtual, redefinirRegistro, FonteDoRegistro, CarregarOpcoes, ResultadoDaCarga, Registro, } from './models/carregar';

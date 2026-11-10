@@ -25,6 +25,13 @@ export interface ProviderSpec {
   // equivalente no papel, mas é risco sem ganho — o registro descreve o que É,
   // não o que seria mais bonito.
   sdk?: 'groq';
+  // Campos fixos que o provedor exige em TODO pedido, além dos que o cliente já
+  // manda. Existe pelos modelos locais (Ollama): pela API compatível com a
+  // OpenAI, o Ollama liga o raciocínio do Qwen3 sozinho — 11 a 16 s pensando
+  // numa frase de oi, contra 3 s sem —, e só `reasoning_effort: "none"` desliga
+  // (medido em 10/11/2026; `think: false` é ignorado nessa API). É dado do
+  // registro, não código: um provedor novo com exigência parecida é só config.
+  extraBody?: Record<string, unknown>;
 }
 
 export type Product =
