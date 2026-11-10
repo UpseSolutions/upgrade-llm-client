@@ -13,7 +13,7 @@ import { resolveRole, registryVersion, REGISTRY_VERSION } from '../models/regist
  */
 
 const REGISTRO_NOVO = {
-  version: 7,
+  version: 8,
   providers: {
     anthropic: { api: 'anthropic', envKey: 'ANTHROPIC_API_KEY', verified: true },
     openai: { api: 'openai-compatible', envKey: 'OPENAI_API_KEY', verified: true },
@@ -46,6 +46,7 @@ const REGISTRO_NOVO = {
     embedding: { description: 'Vetores.', cascade: ['text-embedding-3-small'] },
     transcricao: { description: 'Áudio.', cascade: ['whisper-1'] },
     imagem: { description: 'Gerar imagem.', cascade: ['dall-e-3'] },
+    atendimento_agenda: { description: 'Agenda.', cascade: ['gpt-4o'] },
   },
   products: {},
 };
@@ -64,19 +65,19 @@ afterAll(() => redefinirRegistro());
 
 describe('quando o coletor responde', () => {
   it('passa a usar a edição publicada', async () => {
-    global.fetch = respondeCom(200, { version: 7, content: REGISTRO_NOVO }) as never;
+    global.fetch = respondeCom(200, { version: 8, content: REGISTRO_NOVO }) as never;
 
     const r = await carregarRegistro(OPCOES);
 
-    expect(r).toEqual({ fonte: 'coletor', version: 7 });
+    expect(r).toEqual({ fonte: 'coletor', version: 8 });
     expect(fonteDoRegistro()).toBe('coletor');
-    expect(registryVersion()).toBe(7);
+    expect(registryVersion()).toBe(8);
   });
 
   it('e resolveRole passa a responder pela edição nova, sem recompilar nada', async () => {
     // É o ponto inteiro do passo: trocar o modelo do atendimento para DeepSeek
     // virou uma edição publicada no console, não um deploy em seis produtos.
-    global.fetch = respondeCom(200, { version: 7, content: REGISTRO_NOVO }) as never;
+    global.fetch = respondeCom(200, { version: 8, content: REGISTRO_NOVO }) as never;
     await carregarRegistro(OPCOES);
 
     expect(resolveRole('conversa')[0]).toEqual({
@@ -87,7 +88,7 @@ describe('quando o coletor responde', () => {
   });
 
   it('manda a chave do produto, e nada além dela', async () => {
-    const fetchFalso = respondeCom(200, { version: 7, content: REGISTRO_NOVO });
+    const fetchFalso = respondeCom(200, { version: 8, content: REGISTRO_NOVO });
     global.fetch = fetchFalso as never;
 
     await carregarRegistro(OPCOES);
@@ -218,8 +219,8 @@ describe('sem chamar carregarRegistro', () => {
 
 describe('registroAtual', () => {
   it('devolve o documento em uso, para quem quiser inspecionar', async () => {
-    global.fetch = respondeCom(200, { version: 7, content: REGISTRO_NOVO }) as never;
+    global.fetch = respondeCom(200, { version: 8, content: REGISTRO_NOVO }) as never;
     await carregarRegistro(OPCOES);
-    expect(registroAtual().version).toBe(7);
+    expect(registroAtual().version).toBe(8);
   });
 });

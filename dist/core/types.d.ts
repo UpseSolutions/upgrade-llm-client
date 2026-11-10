@@ -5,6 +5,7 @@ export interface ProviderSpec {
     api?: ProviderApi;
     baseUrl?: string;
     sdk?: 'groq';
+    extraBody?: Record<string, unknown>;
 }
 export type Product = 'HADRIANS' | 'GOLDANALYZER' | 'KOMPETENT' | 'AGENTEUP' | 'CONTENTSELLER' | 'EMAILSELLER';
 export interface LLMMessage {

@@ -1,6 +1,6 @@
 {
-    "version": 6,
-    "updatedAt": "2026-11-01",
+    "version": 7,
+    "updatedAt": "2026-11-10",
     "_leiaMe": [
         "Registro central de modelos do portfólio Upgrade Soluções.",
         "",
@@ -139,6 +139,23 @@
                 "",
                 "SEM `api`: este cliente não fala com o Google. Existe no catálogo porque o",
                 "consumo gera custo e precisa de preço."
+            ]
+        },
+        "local": {
+            "api": "openai-compatible",
+            "baseUrl": "http://modelos-locais:11434/v1",
+            "envKey": "MODELOS_LOCAIS_KEY",
+            "verified": true,
+            "extraBody": {
+                "reasoning_effort": "none"
+            },
+            "note": [
+                "Modelos próprios no Ollama da VPS (contêiner `modelos-locais`), sem crédito nem cota.",
+                "Só é alcançável por produto cuja rede Docker foi ligada ao contêiner; por isso o passo",
+                "só entra com MODELOS_LOCAIS_KEY no env do produto (qualquer valor: o Ollama não confere).",
+                "CPU sem GPU: o 4B leva 20-35 s por resposta e um pedido por vez. Use no fim da cascata",
+                "ou em tarefa de fundo. `reasoning_effort: none` é obrigatório (sem ele o Qwen3 pensa).",
+                "Verificado em 10/11/2026 com o goldanalyzer-api chamando /v1/chat/completions."
             ]
         }
     },
@@ -291,6 +308,38 @@
                 "Em 01/11/2026 passou nos 7 casos da demonstração e na chamada de ferramenta.",
                 "O gpt-oss-120b não indicou médico no caso de saúde; este indicou."
             ]
+        },
+        "agente-qwen3-4b-v3": {
+            "provider": "local",
+            "price": {
+                "inputPerMTok": 0,
+                "outputPerMTok": 0
+            },
+            "boletim": [
+                {
+                    "papel": "atendimento_agenda",
+                    "prova": "clinica (dev)",
+                    "nota": 1.0,
+                    "em": "2026-11-10"
+                },
+                {
+                    "papel": "atendimento_agenda",
+                    "prova": "celular (controle 3)",
+                    "nota": 1.0,
+                    "em": "2026-11-10"
+                },
+                {
+                    "papel": "atendimento_agenda",
+                    "prova": "ceramica (controle 4, lacrada)",
+                    "nota": 0.98,
+                    "em": "2026-11-10"
+                }
+            ],
+            "note": [
+                "Aluno Qwen3-4B ajustado para o atendimento com agenda do AgenteUP (dados v3, Q4_K_M).",
+                "Notas: pass@1 em 11 cenários x 5, com as travas do produto. Groq qwen3.8-27b fez 73% na barbearia.",
+                "Especialista: não serve para redação nem para outro tipo de atendimento (catálogo não medido)."
+            ]
         }
     },
     "roles": {
@@ -386,6 +435,20 @@
             "description": "Geração de imagem.",
             "cascade": [
                 "gpt-image-1-mini"
+            ]
+        },
+        "atendimento_agenda": {
+            "description": "Atendimento a lead com ferramentas de agenda (consultar, marcar, desmarcar). Conversa curta, com tool calling.",
+            "cascade": [
+                "gpt-4o",
+                "claude-sonnet-5",
+                "agente-qwen3-4b-v3",
+                "qwen/qwen3.8-27b"
+            ],
+            "note": [
+                "Espelha a ordem real do dispatch do AgenteUP (ai/dispatch.service.js). O AgenteUP lê daqui",
+                "QUAL modelo local atende (modeloDoPapel('atendimento_agenda', 'local')): trocar o aluno",
+                "(ex.: pelo 1,7B) é publicar uma edição, com a nota da prova no boletim do modelo novo."
             ]
         }
     },
@@ -490,5 +553,10 @@
         "gpt-image-* é cobrado por token (o prompt é entrada, a imagem é saída) e cabe",
         "aqui normalmente. text-embedding-3-small é cobrado por token, mas o número não",
         "foi conferido — fica sem preço até alguém confirmar na tabela da OpenAI."
+    ],
+    "_sobreBoletim": [
+        "`models.<id>.boletim`: a prova que põe um modelo numa cascata. Cada linha é papel, prova, nota",
+        "(pass@1 de 0 a 1) e data. Regra do sistema de modelos: um modelo só sobe numa cascata com boletim",
+        "naquele papel, nunca pelo nome. Provas escritas depois de olhar as falhas contam como contaminadas."
     ]
 }

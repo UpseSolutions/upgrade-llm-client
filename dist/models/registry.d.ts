@@ -17,11 +17,18 @@ export interface ModelPrice {
         cachedPerMTok?: number;
     };
 }
+export interface LinhaDoBoletim {
+    papel: string;
+    prova: string;
+    nota: number;
+    em: string;
+}
 export interface CatalogEntry {
     model: string;
     provider: string;
     measuredEngine: boolean;
     price?: ModelPrice;
+    boletim?: LinhaDoBoletim[];
 }
 export declare function resolveRole(role: Role, product?: Product): ResolvedModel[];
 export declare function requiredEnvKeys(role: Role, product?: Product): string[];
@@ -38,3 +45,9 @@ export declare function providerIds(): {
 export declare function registryVersion(): number;
 export declare const REGISTRY_VERSION: number;
 export type { Provider, ProviderId, ProviderSpec };
+export declare function passosDoPapel(role: Role, product: Product | undefined, chaves: Record<string, string | undefined>): {
+    provider: ProviderId;
+    apiKey: string;
+    model: string;
+    providerSpec: ProviderSpec;
+}[];

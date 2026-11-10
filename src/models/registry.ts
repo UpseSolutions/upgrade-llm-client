@@ -33,23 +33,34 @@ export interface ModelPrice {
   intro?: { until: string; inputPerMTok: number; outputPerMTok: number; cachedPerMTok?: number };
 }
 
+/** Uma linha do boletim: a prova que justifica o modelo num papel. `nota` é pass@1, de 0 a 1. */
+export interface LinhaDoBoletim {
+  papel: string;
+  prova: string;
+  nota: number;
+  em: string;
+}
+
 export interface CatalogEntry {
   model: string;
   provider: string;
   measuredEngine: boolean;
   /** Ausente quando o modelo não tem preço declarado no registro. */
   price?: ModelPrice;
+  /** As provas do modelo, por papel (ver `_sobreBoletim` no models.json). */
+  boletim?: LinhaDoBoletim[];
 }
 
 type ProviderRecord = {
   api?: string;
   baseUrl?: string;
   sdk?: string;
+  extraBody?: Record<string, unknown>;
   envKey: string;
   verified: boolean;
 };
 
-type ModelRecord = { provider: string; measuredEngine?: boolean; price?: ModelPrice };
+type ModelRecord = { provider: string; measuredEngine?: boolean; price?: ModelPrice; boletim?: LinhaDoBoletim[] };
 
 const providers = () => registroAtual().providers as unknown as Record<string, ProviderRecord>;
 const models = () => registroAtual().models as unknown as Record<string, ModelRecord>;
@@ -143,6 +154,7 @@ export function resolveRole(role: Role, product?: Product): ResolvedModel[] {
         api: p.api as ProviderSpec['api'],
         ...(p.baseUrl ? { baseUrl: p.baseUrl } : {}),
         ...(p.sdk ? { sdk: p.sdk as 'groq' } : {}),
+        ...(p.extraBody ? { extraBody: p.extraBody } : {}),
       },
     };
   });
@@ -175,6 +187,7 @@ export function providerSpecOf(provider: ProviderId): ProviderSpec {
     api: p.api as ProviderSpec['api'],
     ...(p.baseUrl ? { baseUrl: p.baseUrl } : {}),
     ...(p.sdk ? { sdk: p.sdk as 'groq' } : {}),
+    ...(p.extraBody ? { extraBody: p.extraBody } : {}),
   };
 }
 
@@ -192,6 +205,7 @@ export function modelCatalog(): CatalogEntry[] {
     provider: meta.provider,
     measuredEngine: meta.measuredEngine === true,
     ...(meta.price ? { price: meta.price } : {}),
+    ...(meta.boletim ? { boletim: meta.boletim } : {}),
   }));
 }
 
@@ -238,3 +252,35 @@ export const REGISTRY_VERSION = compilado.version;
 
 // Reexportado para quem monta FallbackStep na mão sem passar por resolveRole.
 export type { Provider, ProviderId, ProviderSpec };
+
+/**
+ * A cascata de um papel pronta para `completeWithFallback`, com as chaves de quem chama.
+ *
+ * É o "escalonador" do sistema de modelos: o registro diz a ordem, e o produto
+ * só diz quais chaves tem. Um passo cuja chave não está em `chaves` **fica de
+ * fora**, em vez de virar uma chamada que falha com 401 — é assim que um produto
+ * liga o modelo local (`MODELOS_LOCAIS_KEY`) só quando o contêiner dele enxerga o
+ * serviço, sem que os outros produtos passem a tentar e falhar.
+ *
+ * Levanta se nenhum passo sobrar: cascata vazia é configuração errada, e falhar
+ * no boot é melhor do que na primeira resposta ao cliente.
+ *
+ * A lib não lê env sozinha: quem chama passa `process.env` (ou um subconjunto).
+ */
+export function passosDoPapel(
+  role: Role,
+  product: Product | undefined,
+  chaves: Record<string, string | undefined>,
+): { provider: ProviderId; apiKey: string; model: string; providerSpec: ProviderSpec }[] {
+  const passos = resolveRole(role, product).flatMap((r) => {
+    const apiKey = chaves[providerOf(r.provider as string).envKey];
+    return apiKey ? [{ provider: r.provider, apiKey, model: r.model, providerSpec: r.providerSpec }] : [];
+  });
+  if (passos.length === 0) {
+    throw new Error(
+      `Papel "${String(role)}"${product ? ` em ${product}` : ''} ficou sem nenhum passo: ` +
+        `nenhuma das chaves (${requiredEnvKeys(role, product).join(', ')}) foi passada.`,
+    );
+  }
+  return passos;
+}

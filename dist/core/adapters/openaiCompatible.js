@@ -24,6 +24,7 @@ function buildMessages(params) {
 async function completeOpenAICompatible(spec, params) {
     const client = getClient(spec, params.apiKey);
     const response = await client.chat.completions.create({
+        ...spec.extraBody,
         model: params.model,
         max_tokens: params.maxTokens,
         temperature: params.temperature,
@@ -45,6 +46,7 @@ async function completeOpenAICompatible(spec, params) {
 async function* streamOpenAICompatible(spec, params) {
     const client = getClient(spec, params.apiKey);
     const stream = await client.chat.completions.create({
+        ...spec.extraBody,
         model: params.model,
         max_tokens: params.maxTokens,
         temperature: params.temperature,

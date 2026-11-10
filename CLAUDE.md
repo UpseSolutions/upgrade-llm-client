@@ -164,6 +164,27 @@ TypeScript clássico (`moduleResolution: node`) ignora `exports` por completo, e
 os consumidores estão em configurações diferentes. Um subcaminho que funciona na
 metade deles seria pior que não existir.
 
+## Modelos locais e o escalonador por papel (10/11/2026)
+
+Primeira peça do "sistema operacional de modelos" (plano em
+`modelos-sob-medida/sistema-operacional/PLANO.md`): micro modelos próprios, cada um
+especialista num papel, entrando nas cascatas com prova.
+
+- **Provedor `local`**: Ollama no contêiner `modelos-locais`, alcançável só pelos
+  produtos cuja rede Docker foi ligada a ele (hoje: agenteup e goldanalyzer).
+- **`extraBody` no provedor** (dado, não código): campos fixos de todo pedido. O local
+  leva `reasoning_effort: "none"`, porque pela API compatível o Ollama liga o raciocínio
+  do Qwen3 sozinho (11–16 s pensando numa frase de oi, contra 3 s sem; `think: false` é
+  ignorado ali). Medido em 10/11/2026.
+- **`passosDoPapel(papel, produto, process.env)`** monta a cascata pronta para
+  `completeWithFallback` e **deixa de fora o passo cuja chave não veio**. O produto liga o
+  local com `MODELOS_LOCAIS_KEY` (qualquer valor) no env. Sem ela, nada muda.
+- **Boletim** (`models.<id>.boletim`): papel, prova, nota (pass@1) e data. Regra: um
+  modelo só entra numa cascata com boletim naquele papel. Há teste travando para os locais.
+- 🔴 **Ordem de deploy:** a lib recusa uma edição do coletor que não tenha um papel que
+  ela conhece. Publique no coletor a edição com `atendimento_agenda` e o provedor `local`
+  **antes** de atualizar a lib nos produtos; senão eles caem na cópia compilada.
+
 ## O registro vem do coletor, no boot
 
 ```ts

@@ -13,6 +13,7 @@ exports.modelPrice = modelPrice;
 exports.roles = roles;
 exports.providerIds = providerIds;
 exports.registryVersion = registryVersion;
+exports.passosDoPapel = passosDoPapel;
 const models_json_1 = __importDefault(require("./models.json"));
 const carregar_1 = require("./carregar");
 const providers = () => (0, carregar_1.registroAtual)().providers;
@@ -72,6 +73,7 @@ function resolveRole(role, product) {
                 api: p.api,
                 ...(p.baseUrl ? { baseUrl: p.baseUrl } : {}),
                 ...(p.sdk ? { sdk: p.sdk } : {}),
+                ...(p.extraBody ? { extraBody: p.extraBody } : {}),
             },
         };
     });
@@ -89,6 +91,7 @@ function providerSpecOf(provider) {
         api: p.api,
         ...(p.baseUrl ? { baseUrl: p.baseUrl } : {}),
         ...(p.sdk ? { sdk: p.sdk } : {}),
+        ...(p.extraBody ? { extraBody: p.extraBody } : {}),
     };
 }
 function modelCatalog() {
@@ -97,6 +100,7 @@ function modelCatalog() {
         provider: meta.provider,
         measuredEngine: meta.measuredEngine === true,
         ...(meta.price ? { price: meta.price } : {}),
+        ...(meta.boletim ? { boletim: meta.boletim } : {}),
     }));
 }
 function modelPrice(model) {
@@ -117,4 +121,15 @@ function registryVersion() {
     return (0, carregar_1.registroAtual)().version;
 }
 exports.REGISTRY_VERSION = models_json_1.default.version;
+function passosDoPapel(role, product, chaves) {
+    const passos = resolveRole(role, product).flatMap((r) => {
+        const apiKey = chaves[providerOf(r.provider).envKey];
+        return apiKey ? [{ provider: r.provider, apiKey, model: r.model, providerSpec: r.providerSpec }] : [];
+    });
+    if (passos.length === 0) {
+        throw new Error(`Papel "${String(role)}"${product ? ` em ${product}` : ''} ficou sem nenhum passo: ` +
+            `nenhuma das chaves (${requiredEnvKeys(role, product).join(', ')}) foi passada.`);
+    }
+    return passos;
+}
 //# sourceMappingURL=registry.js.map
