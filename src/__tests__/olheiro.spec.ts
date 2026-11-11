@@ -194,13 +194,14 @@ describe('triagem', () => {
   });
 
   it('modelo do tamanho do piso vai para "mesma faixa", não reabre', () => {
-    const t = rodar([aberto('Qwen/Qwen3.5-4B', 4.66)]);
+    const t = rodar([aberto('org/Outro-4B', 4.3)]);
     expect(t.papeis[0].reabrePiso).toHaveLength(0);
-    expect(t.papeis[0].mesmaFaixa.map((m) => m.id)).toEqual(['Qwen/Qwen3.5-4B']);
+    expect(t.papeis[0].mesmaFaixa.map((m) => m.id)).toEqual(['org/Outro-4B']);
   });
 
   it('base que já está na escada não volta como novidade', () => {
-    const t = rodar([aberto('Qwen/Qwen3-1.7B', 1.7)]);
+    // o Qwen3.5 4B foi medido só com prompt (é o professor): também não é novidade
+    const t = rodar([aberto('Qwen/Qwen3-1.7B', 1.7), aberto('Qwen/Qwen3.5-4B', 4.66)]);
     expect(t.achados).toBe(0);
   });
 

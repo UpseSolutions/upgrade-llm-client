@@ -37,11 +37,37 @@
           "parametrosB": 4,
           "rodadas": [
             {
+              "versao": "v1",
+              "em": "2026-11-09",
+              "notas": {
+                "clinica": 0.91,
+                "barbearia": 0.8,
+                "autoescola": 1
+              },
+              "obs": "Dados v1, Q8, sem as travas."
+            },
+            {
+              "versao": "v2",
+              "em": "2026-11-09",
+              "notas": {
+                "clinica": 0.89,
+                "barbearia": 0.87,
+                "autoescola": 0.98
+              },
+              "obs": "Dados v1 + complemento de horário e ataque, Q8, sem as travas."
+            },
+            {
               "versao": "v3",
               "em": "2026-11-10",
               "modelo": "agente-qwen3-4b-v3",
-              "notas": { "clinica": 1, "barbearia": 1, "autoescola": 1, "celular": 1, "ceramica": 0.98 },
-              "obs": "Q4_K_M; barbearia e autoescola medidas em Q8. Em produção desde 10/11/2026."
+              "notas": {
+                "clinica": 1,
+                "barbearia": 1,
+                "autoescola": 1,
+                "celular": 1,
+                "ceramica": 0.98
+              },
+              "obs": "Q4_K_M; barbearia e autoescola medidas em Q8. Em produção desde 10/11/2026. O v4 (paráfrases) veio depois e ficou abaixo do v3 com trava; não substituiu."
             }
           ]
         },
@@ -52,14 +78,56 @@
             {
               "versao": "v3",
               "em": "2026-11-10",
-              "notas": { "clinica": 0.98, "barbearia": 0.95, "autoescola": 0.85, "celular": 0.85, "ceramica": 0.91 },
+              "notas": {
+                "clinica": 0.98,
+                "barbearia": 0.95,
+                "autoescola": 0.85,
+                "celular": 0.85,
+                "ceramica": 0.91
+              },
               "obs": "Mesmos dados do 4B v3. Troca de horário 0/5 na autoescola e no celular."
             },
             {
               "versao": "v5",
               "em": "2026-11-10",
-              "notas": { "clinica": 1, "barbearia": 0.95, "autoescola": 0.85, "celular": 0.89, "ceramica": 0.78 },
+              "notas": {
+                "clinica": 1,
+                "barbearia": 0.95,
+                "autoescola": 0.85,
+                "celular": 0.89,
+                "ceramica": 0.78
+              },
               "obs": "Trava de troca no código + 575 conversas de troca e pedido indireto. Validação melhorou (0,446 -> 0,423), a nota não: os erros mudaram de lugar."
+            }
+          ]
+        },
+        {
+          "base": "Qwen/Qwen3.5-4B",
+          "parametrosB": 4.66,
+          "rodadas": [
+            {
+              "versao": "so-prompt",
+              "em": "2026-11-09",
+              "notas": {
+                "clinica": 0.98,
+                "barbearia": 0.84,
+                "autoescola": 0.84
+              },
+              "obs": "Sem treino, pensando (~10 min por 55 conversas). É o professor que gerou os dados. Ajuste fino nunca rodado: cabe na GPU de 8 GB, mas é lento no Windows."
+            }
+          ]
+        },
+        {
+          "base": "Qwen/Qwen3.5-9B",
+          "parametrosB": 9.65,
+          "rodadas": [
+            {
+              "versao": "so-prompt",
+              "em": "2026-11-08",
+              "notas": {
+                "clinica": 0.64
+              },
+              "obs": "Sem treino, pensando, 11 x 3. Quase nunca chamou agendar_visita. Modelo apagado."
             }
           ]
         }
