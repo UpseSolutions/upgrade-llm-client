@@ -1,0 +1,51 @@
+# Olheiro de modelos: toda segunda, olha o que saiu de novo e cruza com o que já medimos.
+#
+# Abre uma issue SÓ quando há achado (modelo novo que disputa o piso de algum papel) ou quando
+# uma fonte falhou. Semana sem novidade não gera aviso: o relatório fica no resumo da execução.
+# Não usa segredo nenhum: Hugging Face e OpenRouter são lidos sem chave.
+name: Olheiro de modelos
+
+on:
+  schedule:
+    - cron: '0 11 * * 1' # segunda, 08:00 de Brasília
+  workflow_dispatch:
+    inputs:
+      dias:
+        description: Quantos dias olhar para trás
+        default: '8'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  olheiro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Varrer
+        env:
+          DIAS: ${{ inputs.dias || '8' }}
+        run: |
+          node dist/olheiro/cli.js --dias "$DIAS" --saida relatorio.md
+          cat relatorio.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Abrir issue se houver achado ou fonte com falha
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          achados=$(grep -oP '(?<=<!-- achados: )\d+' relatorio.md)
+          falhas=$(grep -c '^## Fontes que falharam' relatorio.md || true)
+          if [ "$achados" -gt 0 ] || [ "$falhas" -gt 0 ]; then
+            gh issue create \
+              --title "Olheiro de modelos: $achados achado(s) em $(date +%d/%m/%Y)" \
+              --body-file relatorio.md
+          else
+            echo "Sem achado nesta semana."
+          fi

@@ -264,3 +264,29 @@ antes de mexer em qualquer coisa Kimi/Moonshot, porque ele guarda verificações
 feitas ao vivo contra o catálogo dos provedores (em 2026-08-09, por exemplo:
 a Moonshot nunca expôs `kimi-k3`, só `kimi-k2.6` e `kimi-k2.7-code`, e a conta
 está suspensa — o tier4 foi migrado para a Together).
+
+## Olheiro de modelos e o piso de cada papel (11/11/2026)
+
+`src/olheiro/` responde a duas perguntas do dono, com regra escrita:
+
+- **"Saiu modelo novo que muda alguma decisão nossa?"** `npm run olheiro` (ou
+  `node dist/olheiro/cli.js --dias 8`) lê o Hugging Face (autores em `fontes.ts`, `AUTORES`)
+  e o OpenRouter, sem chave e **sem modelo de linguagem**, e cruza com `escadas.json`. Roda toda
+  segunda (`.github/workflows/olheiro.yml`) e abre issue só quando há achado ou fonte com falha.
+- **"Já achamos o menor modelo para esta tarefa? Este está no limite?"** `piso.ts`. O degrau
+  passa pela **pior prova** (barra em `escadas.json`, `criterio`). Duas rodadas abaixo da barra
+  sem a pior prova subir = `no_limite`: para de treinar aquele tamanho. O piso é `provado`
+  quando o degrau de baixo está `no_limite`; senão é `provisorio`.
+
+Regras:
+
+- **Toda rodada medida entra em `escadas.json`, passando ou não.** O resultado negativo é o que
+  prova o piso. Modelo já listado ali não volta como novidade.
+- **Piso provado vale para os modelos que existiam na medição.** Modelo novo e menor aparece
+  como "reabre o piso". O passo seguinte é medir só com prompt nas provas congeladas, antes
+  de qualquer treino.
+- `escadas.json` fica fora do `models.json` de propósito: nenhum produto depende dele, então
+  editar não pede edição no coletor.
+- Fonte que falha vai para o relatório (`falhas`), nunca some. Nesta máquina o Node recusa o
+  certificado do OpenRouter (`SELF_SIGNED_CERT_IN_CHAIN`); rode com `node --use-system-ca`.
+  No GitHub Actions não acontece.
