@@ -130,6 +130,42 @@
               "obs": "Sem treino, pensando, 11 x 3. Quase nunca chamou agendar_visita. Modelo apagado."
             }
           ]
+        },
+        {
+          "base": "Qwen/Qwen3.5-2B",
+          "parametrosB": 2.27,
+          "rodadas": [
+            {
+              "versao": "so-prompt",
+              "em": "2026-11-11",
+              "notas": {
+                "clinica": 0.53,
+                "barbearia": 0.44,
+                "autoescola": 0.47,
+                "celular": 0.47,
+                "ceramica": 0.44
+              },
+              "obs": "Sem treino, pensando, 11 x 5 (26 min as 5 provas). Consulta a agenda e tenta marcar, mas não conclui: 0/5 em quase todo cenário de marcação. Achado do olheiro."
+            }
+          ]
+        },
+        {
+          "base": "Qwen/Qwen3.5-0.8B",
+          "parametrosB": 0.87,
+          "rodadas": [
+            {
+              "versao": "so-prompt",
+              "em": "2026-11-11",
+              "notas": {
+                "clinica": 0.42,
+                "barbearia": 0.38,
+                "autoescola": 0.42,
+                "celular": 0.45,
+                "ceramica": 0.45
+              },
+              "obs": "Sem treino, pensando, 11 x 5 (13 min as 5 provas). Nenhuma marcação concluída em nenhuma prova. Achado do olheiro."
+            }
+          ]
         }
       ]
     }
