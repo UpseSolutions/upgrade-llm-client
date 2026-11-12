@@ -73,10 +73,11 @@ describe('piso do papel (já achamos o menor?)', () => {
     expect(pisoDoPapel({ degraus: [degrau('a', 4, { x: 0.5 })] }, criterio).estado).toBe('sem_piso');
   });
 
-  // Não trava o estado (provado/provisório): ele muda, com razão, a cada degrau novo registrado.
-  it('dados reais: atendimento_agenda tem piso no Qwen3 4B e o Qwen3 1,7B no limite', () => {
+  // Não trava QUAL é o piso nem o estado dele: os dois mudam, com razão, a cada rodada registrada
+  // (em 12/11/2026 o piso desceu do Qwen3 4B para o Qwen3.5 2B).
+  it('dados reais: atendimento_agenda tem piso e o Qwen3 1,7B está no limite', () => {
     const p = pisoDoPapel(escadas.atendimento_agenda, criterio);
-    expect(p.piso?.base).toBe('Qwen/Qwen3-4B');
+    expect(p.piso).not.toBeNull();
     expect(p.degraus.find((d) => d.base === 'Qwen/Qwen3-1.7B')?.veredito).toBe('no_limite');
   });
 
@@ -184,8 +185,19 @@ describe('triagem', () => {
     ...extra,
   });
   const opcoes = { ...OPCOES_PADRAO, hoje: '2026-11-11' };
+  // Escada FIXA, não a de escadas.json: a triagem depende de onde está o piso, e o piso real muda a
+  // cada rodada medida. Aqui: 4B aprovado, 1,7B no limite, um 4,66B medido uma vez.
+  const escadaFixa: Record<string, Escada> = {
+    atendimento_agenda: {
+      degraus: [
+        degrau('Qwen/Qwen3-4B', 4, { x: 1, y: 0.98 }),
+        degrau('Qwen/Qwen3-1.7B', 1.7, { x: 0.98, y: 0.85 }, { x: 1, y: 0.78 }),
+        degrau('Qwen/Qwen3.5-4B', 4.66, { x: 0.98, y: 0.84 }),
+      ],
+    },
+  };
   const rodar = (abertos: ReturnType<typeof aberto>[], falhas = [] as { fonte: string; motivo: string }[]) =>
-    triar(abertos, [], escadas, criterio, [], falhas, opcoes);
+    triar(abertos, [], escadaFixa, criterio, [], falhas, opcoes);
 
   it('modelo menor que o piso e nunca testado reabre o piso', () => {
     const t = rodar([aberto('lab/Novo-2B', 2.27), aberto('lab/Novo-0.8B', 0.87)]);
