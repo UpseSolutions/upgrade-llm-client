@@ -146,6 +146,19 @@
                                 "ceramica": 0.44
                             },
                             "obs": "Sem treino, pensando, 11 x 5 (26 min as 5 provas). Consulta a agenda e tenta marcar, mas não conclui: 0/5 em quase todo cenário de marcação. Achado do olheiro."
+                        },
+                        {
+                            "versao": "v3",
+                            "em": "2026-11-12",
+                            "modelo": "agente-qwen35-2b-v3-q4",
+                            "notas": {
+                                "clinica": 1,
+                                "barbearia": 0.96,
+                                "autoescola": 0.96,
+                                "celular": 0.91,
+                                "ceramica": 0.89
+                            },
+                            "obs": "Mesmos dados e receita do Qwen3 1,7B v3 (treino_v3, 1 época, 3 h 04), Q4_K_M, sem pensar, com as travas. Troca de horário 5/5 nas 5 provas. O que falta: marcação passo a passo na cerâmica (1/5) e sistema fora do ar."
                         }
                     ]
                 },
