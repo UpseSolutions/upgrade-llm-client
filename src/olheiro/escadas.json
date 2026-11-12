@@ -159,6 +159,34 @@
                 "ceramica": 0.89
               },
               "obs": "Mesmos dados e receita do Qwen3 1,7B v3 (treino_v3, 1 época, 3 h 04), Q4_K_M, sem pensar, com as travas. Troca de horário 5/5 nas 5 provas. O que falta: marcação passo a passo na cerâmica (1/5) e sistema fora do ar."
+            },
+            {
+              "versao": "v6",
+              "em": "2026-11-12",
+              "modelo": "agente-qwen35-2b-v6-q4",
+              "notas": {
+                "clinica": 0.98,
+                "barbearia": 0.98,
+                "autoescola": 0.99,
+                "celular": 0.945,
+                "ceramica": 0.96,
+                "musica": 1
+              },
+              "obs": "treino_v3 + 1.793 exemplos de marcação e de sistema fora do ar (professor: 4B v3, sem pensar). 1 época, 600 passos, 4 h 47. Q4_K_M 1,27 GB. Notas = soma de DUAS medidas (110 conversas por prova); música é a prova nova lacrada (55). Medida 1: pior prova 96%; medida 2: 93%. O celular soma 104/110 = 94,5%, meio ponto abaixo da barra. 14 das 15 falhas em 605 conversas são estouro do limite de 3 rodadas de ferramenta (o 4B v3 fez 98% na música)."
+            },
+            {
+              "versao": "v6-fecho",
+              "em": "2026-11-12",
+              "modelo": "agente-qwen35-2b-v6-q4",
+              "notas": {
+                "clinica": 0.991,
+                "barbearia": 1,
+                "autoescola": 0.991,
+                "celular": 0.973,
+                "ceramica": 1,
+                "musica": 1
+              },
+              "obs": "MESMO modelo da v6, sem treino novo: muda o código (fechamento sem ferramentas no limite de rodadas, groq.service.js). Soma de duas medidas (110 por prova), 655/660. Estouros do limite: 0. Numa das medidas o celular deu 52/55 (94,5%). DEPENDE do conserto, que em 12/11/2026 estava só no worktree de avaliação, fora de produção. O 4B v3 com o mesmo conserto: 329/330."
             }
           ]
         },
