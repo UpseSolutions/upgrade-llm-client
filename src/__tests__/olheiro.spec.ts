@@ -73,9 +73,9 @@ describe('piso do papel (já achamos o menor?)', () => {
     expect(pisoDoPapel({ degraus: [degrau('a', 4, { x: 0.5 })] }, criterio).estado).toBe('sem_piso');
   });
 
-  it('dados reais: atendimento_agenda tem piso provado no 4B e o 1,7B no limite', () => {
+  // Não trava o estado (provado/provisório): ele muda, com razão, a cada degrau novo registrado.
+  it('dados reais: atendimento_agenda tem piso no Qwen3 4B e o Qwen3 1,7B no limite', () => {
     const p = pisoDoPapel(escadas.atendimento_agenda, criterio);
-    expect(p.estado).toBe('provado');
     expect(p.piso?.base).toBe('Qwen/Qwen3-4B');
     expect(p.degraus.find((d) => d.base === 'Qwen/Qwen3-1.7B')?.veredito).toBe('no_limite');
   });
@@ -188,8 +188,8 @@ describe('triagem', () => {
     triar(abertos, [], escadas, criterio, [], falhas, opcoes);
 
   it('modelo menor que o piso e nunca testado reabre o piso', () => {
-    const t = rodar([aberto('Qwen/Qwen3.5-2B', 2.27), aberto('Qwen/Qwen3.5-0.8B', 0.87)]);
-    expect(t.papeis[0].reabrePiso.map((m) => m.id)).toEqual(['Qwen/Qwen3.5-2B', 'Qwen/Qwen3.5-0.8B']);
+    const t = rodar([aberto('lab/Novo-2B', 2.27), aberto('lab/Novo-0.8B', 0.87)]);
+    expect(t.papeis[0].reabrePiso.map((m) => m.id)).toEqual(['lab/Novo-2B', 'lab/Novo-0.8B']);
     expect(t.achados).toBe(2);
   });
 
@@ -245,11 +245,11 @@ describe('triagem', () => {
   });
 
   it('o relatório traz o piso, o achado, a contagem e a fonte que falhou', () => {
-    const texto = relatorio(rodar([aberto('Qwen/Qwen3.5-2B', 2.27)], [{ fonte: 'huggingface:google', motivo: 'HTTP 503' }]));
-    expect(texto).toContain('Piso provado: Qwen/Qwen3-4B');
+    const texto = relatorio(rodar([aberto('lab/Novo-2B', 2.27)], [{ fonte: 'huggingface:google', motivo: 'HTTP 503' }]));
+    expect(texto).toContain('Qwen/Qwen3-4B (4 B)');
     expect(texto).toContain('no limite');
     expect(texto).toContain('Reabrem o piso');
-    expect(texto).toContain('Qwen/Qwen3.5-2B');
+    expect(texto).toContain('lab/Novo-2B');
     expect(texto).toContain('<!-- achados: 1 -->');
     expect(texto).toContain('huggingface:google: HTTP 503');
   });
