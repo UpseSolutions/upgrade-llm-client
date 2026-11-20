@@ -1,0 +1,101 @@
+{
+  "_leia": "EXEMPLO com nomes fictícios. O inventário real (domínios, bancos, caminhos) NÃO fica neste repositório, que é público: fica só na máquina vigiada, em /etc/vigia/alvos.json (VIGIA_ALVOS). Copie este arquivo para lá e troque os valores.",
+  "alvos": {
+    "sites": [
+      "https://exemplo.com.br/",
+      "https://api.exemplo.com.br/health",
+      "https://painel.loja.com.br/saude"
+    ],
+    "dominios": [
+      "exemplo.com.br",
+      "www.exemplo.com.br",
+      "api.exemplo.com.br",
+      "painel.loja.com.br"
+    ],
+    "bancos": {
+      "app-db": "app",
+      "loja-postgres": "loja"
+    },
+    "pastaBackups": "/var/backups/bancos",
+    "traefik": "traefik",
+    "janelaHoras": 168,
+    "ignorarLogs": [
+      "^ci-runners-"
+    ]
+  },
+  "config": {
+    "reinicioEsperado": [
+      "^ci-runners-"
+    ],
+    "backupMaxHoras": 36,
+    "certificadoMinDias": 21,
+    "discoMaxPct": 85,
+    "memoriaMinMb": 1024,
+    "semBackupAceito": {},
+    "regrasDeLog": [
+      {
+        "nome": "anthropic_sem_credito",
+        "padrao": "credit balance",
+        "gravidade": "alta",
+        "explica": "Anthropic sem crédito",
+        "acao": "Recarregar a conta principal ou a reserva no console da Anthropic; enquanto isso os produtos caem no Groq."
+      },
+      {
+        "nome": "openai_sem_cota",
+        "padrao": "insufficient_quota|exceeded your current quota",
+        "gravidade": "alta",
+        "explica": "OpenAI sem cota",
+        "acao": "Recarregar créditos na OpenAI (platform.openai.com → Billing)."
+      },
+      {
+        "nome": "modelo_inexistente",
+        "padrao": "model[^a-z]{0,6}\\S* does not exist|model_not_found|has been decommissioned|is not supported anymore",
+        "gravidade": "alta",
+        "explica": "chamada para um modelo que não existe mais",
+        "acao": "Trocar o id do modelo pelo papel equivalente no registro (models.json)."
+      },
+      {
+        "nome": "groq_limite",
+        "padrao": "rate_limit_exceeded|Rate limit reached",
+        "gravidade": "media",
+        "explica": "limite de taxa do Groq",
+        "acao": "Se for frequente, a reserva gratuita não dá conta do volume: rever qual feature cai nela."
+      },
+      {
+        "nome": "dns_externo",
+        "padrao": "Name or service not known|getaddrinfo ENOTFOUND|EAI_AGAIN",
+        "gravidade": "media",
+        "explica": "endereço externo que não existe mais (DNS)",
+        "acao": "A API de terceiros mudou de endereço ou saiu do ar: atualizar o endereço ou desligar o coletor."
+      },
+      {
+        "nome": "fonte_bloqueada",
+        "padrao": "403 Client Error|403 Forbidden|HTTP 403",
+        "gravidade": "media",
+        "explica": "fonte externa recusando o robô (403)",
+        "acao": "Respeitar o bloqueio: trocar a fonte por API oficial ou desligar o coletor (não disfarçar o robô)."
+      },
+      {
+        "nome": "coletor_twitter",
+        "padrao": "guest_login|o X encerrou a busca",
+        "gravidade": "media",
+        "explica": "coletor do X/Twitter parado",
+        "acao": "A busca sem conta acabou; só volta com conta ou API paga. Decidir se desliga o coletor."
+      },
+      {
+        "nome": "sem_memoria",
+        "padrao": "JavaScript heap out of memory|OOMKilled|MemoryError|Killed process",
+        "gravidade": "alta",
+        "explica": "processo morto por falta de memória",
+        "acao": "Aumentar o mem_limit do serviço ou achar o vazamento."
+      },
+      {
+        "nome": "banco_recusou",
+        "padrao": "too many clients already|remaining connection slots are reserved|deadlock detected",
+        "gravidade": "alta",
+        "explica": "banco recusando conexões",
+        "acao": "Ver o pool de conexões do serviço (conexões abertas e não devolvidas)."
+      }
+    ]
+  }
+}
