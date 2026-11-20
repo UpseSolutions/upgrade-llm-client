@@ -144,6 +144,11 @@ describe('relatório e resumo', () => {
     expect(r).toEqual({ texto: null, motivo: expect.stringMatching(/IA indisponível/) });
   });
 
+  it('a instrução proíbe a IA de escrever números', () => {
+    const { INSTRUCAO } = jest.requireActual('../vigia/resumo');
+    expect(INSTRUCAO).toMatch(/NÃO escreva números/);
+  });
+
   it('resposta vazia vira motivo, não "undefined"', async () => {
     const vazio = async () => ({ text: '  ', modelUsed: 'm' }) as any;
     const r = await escreverResumo(achados, cmp, { GROQ_API_KEY: 'k' }, vazio as never);

@@ -12,9 +12,13 @@ import { completeWithFallback } from '../fallback/cascade';
 import { passosDoPapel } from '../models/registry';
 import type { Achado, Comparacao } from './regras';
 
+// Medido no 1º relatório (20/11/2026): o modelo do papel (gpt-oss-20b) errava contas — "13 bancos"
+// eram 12, "9 domínios" eram 4 zonas, "5 contas" eram 2. Decisão: a IA não escreve número nenhum;
+// os números vêm das regras, no corpo do relatório, logo abaixo do resumo.
 export const INSTRUCAO =
   'Você escreve o resumo de um relatório técnico semanal para o dono de uma pequena empresa de software, ' +
   'em português do Brasil. Use SÓ os achados recebidos: não invente causa, número nem produto. ' +
+  'NÃO escreva números nem quantidades (eles já estão no relatório, logo abaixo do resumo). ' +
   'Em no máximo 6 linhas: o que é mais urgente e por quê (em linguagem de negócio, sem jargão), ' +
   'o que é novo nesta semana e o que pode esperar. Não repita a lista inteira. Sem markdown.';
 
