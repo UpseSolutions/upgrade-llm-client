@@ -7,6 +7,7 @@ const cascade_1 = require("../fallback/cascade");
 const registry_1 = require("../models/registry");
 exports.INSTRUCAO = 'Você escreve o resumo de um relatório técnico semanal para o dono de uma pequena empresa de software, ' +
     'em português do Brasil. Use SÓ os achados recebidos: não invente causa, número nem produto. ' +
+    'NÃO escreva números nem quantidades (eles já estão no relatório, logo abaixo do resumo). ' +
     'Em no máximo 6 linhas: o que é mais urgente e por quê (em linguagem de negócio, sem jargão), ' +
     'o que é novo nesta semana e o que pode esperar. Não repita a lista inteira. Sem markdown.';
 function entradaDoResumo(achados, cmp) {

@@ -108,6 +108,15 @@ describe('coleta (comandos simulados)', () => {
     ]);
   });
 
+  it('banco do Swarm casa pelo prefixo do nome', () => {
+    const r = simular([
+      [/docker ps --format/, 'zap_db.1.abc123|postgres:17'],
+      [/zap-\*/, String(Math.floor(Date.parse('2026-11-20T02:40:00Z') / 1000))],
+    ]);
+    const a = { ...alvos, bancos: { zap_db: 'zap' } };
+    expect(coletarBancos(a, r, new Date('2026-11-20T04:40:00Z'))).toEqual([{ container: 'zap_db.1.abc123', idadeBackupHoras: 2 }]);
+  });
+
   it('log: conta por regra e o exemplo sai sem segredo', () => {
     const r = simular([[/docker ps --format/, 'api\nci-runners-x-1'],
       [/logs.*api/, 'ok\nError: credit balance is too low; key sk-ant-api03-abcdefghijklmnopqrst for fulano@ex.com\n']]);
@@ -142,6 +151,11 @@ describe('relatório e resumo', () => {
     const falha = async () => { throw new Error('credit balance is too low'); };
     const r = await escreverResumo(achados, cmp, { GROQ_API_KEY: 'k' }, falha as never);
     expect(r).toEqual({ texto: null, motivo: expect.stringMatching(/IA indisponível/) });
+  });
+
+  it('a instrução proíbe a IA de escrever números', () => {
+    const { INSTRUCAO } = jest.requireActual('../vigia/resumo');
+    expect(INSTRUCAO).toMatch(/NÃO escreva números/);
   });
 
   it('resposta vazia vira motivo, não "undefined"', async () => {
