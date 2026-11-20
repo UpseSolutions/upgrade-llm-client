@@ -144,6 +144,12 @@ describe('relatório e resumo', () => {
     expect(r).toEqual({ texto: null, motivo: expect.stringMatching(/IA indisponível/) });
   });
 
+  it('resposta vazia vira motivo, não "undefined"', async () => {
+    const vazio = async () => ({ text: '  ', modelUsed: 'm' }) as any;
+    const r = await escreverResumo(achados, cmp, { GROQ_API_KEY: 'k' }, vazio as never);
+    expect(r).toEqual({ texto: null, modelo: 'm', motivo: 'm respondeu vazio' });
+  });
+
   it('a IA recebe só os achados, usa o papel classificacao e devolve o texto', async () => {
     let pedido: any;
     const ok = async (config: any, params: any) => { pedido = { config, params }; return { text: ' Urgente: x. ', modelUsed: 'm' } as any; };

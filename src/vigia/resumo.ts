@@ -43,9 +43,12 @@ export async function escreverResumo(
     const r = await chamar(
       { useCase: 'vigia_resumo', steps: passos },
       { system: INSTRUCAO, messages: [{ role: 'user', content: entradaDoResumo(achados, cmp) }],
-        maxTokens: 400, temperature: 0.2, feature: 'vigia_resumo' },
+        // 1.500 e não 400: o gpt-oss do Groq raciocina antes de responder, e com 400 o
+        // raciocínio gastava tudo e o texto vinha vazio (medido no 1º relatório, 20/11/2026).
+        maxTokens: 1500, temperature: 0.2, feature: 'vigia_resumo' },
     );
-    return { texto: r.text.trim() || null, modelo: r.modelUsed };
+    const texto = r.text.trim();
+    return texto ? { texto, modelo: r.modelUsed } : { texto: null, modelo: r.modelUsed, motivo: `${r.modelUsed} respondeu vazio` };
   } catch (e) {
     return { texto: null, motivo: `IA indisponível: ${(e as Error).message.slice(0, 160)}` };
   }
