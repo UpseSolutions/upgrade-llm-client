@@ -86,9 +86,12 @@ export function coletarBancos(alvos: Alvos, rodar: Rodar, agora: Date): Banco[] 
   const bancos = imagens.filter((l) => /postgres|pgvector|mariadb|mysql|mongo/i.test(l) || /(^|[-_])db([-_.|]|$)/i.test(l.split('|')[0]))
     .map((l) => l.split('|')[0])
     .filter((nome) => !/redis/i.test(nome));
-  const nomes = [...new Set([...Object.keys(alvos.bancos), ...bancos])].filter((n) => bancos.includes(n));
-  return nomes.map((container) => {
-    const prefixo = alvos.bancos[container];
+  // A chave da configuração pode ser o PREFIXO do nome: container de serviço do Swarm
+  // ganha um sufixo novo (".1.xxxx") a cada recriação.
+  const prefixoDe = (nome: string) =>
+    Object.entries(alvos.bancos).find(([k]) => nome === k || nome.startsWith(`${k}.`))?.[1] ?? null;
+  return [...new Set(bancos)].map((container) => {
+    const prefixo = prefixoDe(container);
     if (!prefixo) return { container, idadeBackupHoras: null };
     const epoch = rodar(`ls -1t ${alvos.pastaBackups}/${prefixo}-*.gz 2>/dev/null | head -1 | xargs -r stat -c %Y`).trim();
     return { container, idadeBackupHoras: epoch ? Math.round((+agora / 1000 - Number(epoch)) / 3600) : null };
