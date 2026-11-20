@@ -290,3 +290,21 @@ Regras:
 - Fonte que falha vai para o relatório (`falhas`), nunca some. Nesta máquina o Node recusa o
   certificado do OpenRouter (`SELF_SIGNED_CERT_IN_CHAIN`); rode com `node --use-system-ca`.
   No GitHub Actions não acontece.
+
+## Vigia das plataformas (20/11/2026)
+
+`src/vigia/` responde a "o que está quebrado e ninguém viu?", toda segunda, na máquina vigiada
+(cron, não GitHub Actions: precisa ver containers, logs e a pasta de backups). Complementa um
+monitor de "está de pé?": os problemas caros não derrubam container — certificado da origem
+vencido atrás de CDN, banco sem backup, provedor sem crédito, modelo que deixou de existir.
+
+- `coleta.ts` é a única parte com máquina; `regras.ts` é puro (fatos → achados com gravidade e
+  ação) e tem teste por regra; `comparar` marca novo / persistente / resolvido.
+- **O vínculo com a lib:** `resumo.ts` escreve 6 linhas pela cascata do papel `classificacao`
+  (`passosDoPapel` + `completeWithFallback`). A IA só escreve; gravidade e ação vêm das regras.
+  Sem chave ou sem crédito, o relatório sai sem resumo — nunca deixa de avisar por causa da IA.
+- 🔴 **Este repositório é público.** O inventário real (domínios, bancos, caminhos) fica SÓ na
+  máquina, em `/etc/vigia/alvos.json` (`VIGIA_ALVOS`); aqui vai `alvos.exemplo.json`, com nomes
+  fictícios, e `src/vigia/alvos.json` está no `.gitignore`. Nada de nome de produto, domínio ou
+  retrato do que está quebrado em comentário, teste ou PR deste repo.
+- Exemplo de log passa por `semSegredo` antes de ir para relatório ou para a IA.
