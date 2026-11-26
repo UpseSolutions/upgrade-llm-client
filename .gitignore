@@ -2,3 +2,4 @@ node_modules/
 *.log
 *.tsbuildinfo
 src/vigia/alvos.json
+docs/planos/
