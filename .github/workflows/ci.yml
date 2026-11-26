@@ -1,0 +1,41 @@
+# CI: em todo PR e push na main, build limpo + dist/ em sincronia + testes.
+#
+# O dist/ é versionado: os produtos instalam do GitHub e recebem o build commitado. Se alguém
+# mexer em src/ e esquecer de commitar o dist/, os produtos seguem na versão antiga sem nada
+# quebrar. Por isso o build roda do zero (sem dist/ e sem *.tsbuildinfo, que faria o tsc emitir
+# quase nada) e o PR é barrado se o resultado for diferente do que está commitado.
+#
+# Só ubuntu-latest: o repositório é público (Actions sem cota), e um runner na VPS deixaria um
+# PR de fork rodar código lá.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build limpo
+        run: |
+          rm -rf dist *.tsbuildinfo
+          npm run build
+      - name: dist/ igual ao commitado
+        run: |
+          if ! git diff --exit-code --stat -- dist || [ -n "$(git status --porcelain -- dist)" ]; then
+            echo "::error::dist/ fora de sincronia com src/. Rode 'npm run build' e commite o dist/ junto."
+            exit 1
+          fi
+      - run: npm test
